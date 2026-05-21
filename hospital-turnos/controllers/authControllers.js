@@ -13,19 +13,18 @@ exports.getLogin = (req, res) => {
 exports.postLogin = (req, res) => {
     const { username, password } = req.body;
 
-    // Buscar si el usuario existe y coincide la contraseña
     const usuarioEncontrado = usuariosMock.find(
         u => u.user === username && u.pass === password
     );
 
     if (usuarioEncontrado) {
-        // En un sistema real, acá guardaríamos la sesión (req.session.user)
         console.log(`Logueado con éxito como: ${usuarioEncontrado.rol}`);
         
-        // Redirección dinámica según el Rol detallado en su documentación
+        // Modificamos el ruteo dinámico según el Rol
         switch (usuarioEncontrado.rol) {
             case 'Administrador':
-                return res.send('<h1>Panel de Administrador (Próximamente)</h1>');
+                // En vez de un res.send, ahora renderizamos la vista del Dashboard
+                return res.render('dashboardAdmin');
             case 'Profesional':
                 return res.send('<h1>Panel Médico (Próximamente)</h1>');
             case 'Paciente':
@@ -36,7 +35,6 @@ exports.postLogin = (req, res) => {
                 return res.redirect('/auth/login');
         }
     } else {
-        // Si falla, vuelve a renderizar el Login pero pasándole un mensaje de error
         res.render('login', { error: 'Usuario o contraseña incorrectos.' });
     }
 };
