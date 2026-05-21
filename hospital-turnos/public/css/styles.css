@@ -1,0 +1,103 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #eef2f7 0%, #d9e2ec 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #334e68;
+}
+
+/* 2. Contenedor del Formulario */
+.login-container {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+h2 {
+    color: #102a43;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+h3 {
+    color: #627d98;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    font-weight: 400;
+}
+
+/* 3. Campos del Formulario */
+.form-group {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #486581;
+}
+
+input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+input:focus {
+    border-color: #1992d4;
+    box-shadow: 0 0 0 3px rgba(25, 146, 212, 0.15);
+}
+
+/* 4. Botón de ingreso */
+.btn-submit {
+    width: 100%;
+    padding: 0.85rem;
+    background-color: #1992d4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 0.5rem;
+}
+
+.btn-submit:hover {
+    background-color: #1474a9;
+}
+
+/* 5. Alertas de Error (Mapeado con el controlador) */
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.alert-danger {
+    background-color: #ffe3e3;
+    color: #b82525;
+    border: 1px solid #fbc2c2;
+}
