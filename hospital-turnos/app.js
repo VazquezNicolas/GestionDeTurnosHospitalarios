@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
+
+//Controladores
 const authController = require('./controllers/authControllers');
+const pacienteController = require('./controllers/pacienteController');
 
 const app = express();
 const PORT = 3000;
@@ -16,6 +19,8 @@ app.use(express.static(path.join(__dirname, 'public'))); // Archivos estáticos 
 // Mapeo de Rutas de Autenticación
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
+app.get('/pacientes/registrar', pacienteController.getRegistrar);
+app.post('/pacientes/registrar', pacienteController.postRegistrar);
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {
