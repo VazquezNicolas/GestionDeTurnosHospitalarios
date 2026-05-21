@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignar Turno - Sistema Hospitalario</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="login-container" style="max-width: 500px;">
+        <h2>Gestión de Citas</h2>
+        <h3>RF-08: Asignar Nuevo Turno</h3>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= success %></div>
+        <% } %>
+
+        <form action="/turnos/asignar" method="POST">
+            <div class="form-group">
+                <label for="pacienteDni">DNI del Paciente Pasivo:</label>
+                <input type="text" id="pacienteDni" name="pacienteDni" required placeholder="Ej: 12345678">
+            </div>
+
+            <div class="form-group">
+                <label for="profesionalId">Profesional / Médico:</label>
+                <select id="profesionalId" name="profesionalId" required style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px;">
+                    <option value="">Seleccione un profesional</option>
+                    <% profesionales.forEach(médico => { %>
+                        <option value="<%= médico.id %>"><%= médico.nombre %> (<%= médico.especialidad %>)</option>
+                    <% }); %>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="turnoIdDisp">Fecha y Horario Disponible:</label>
+                <select id="turnoIdDisp" name="turnoIdDisp" required style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px;">
+                    <option value="">Seleccione un horario libre</option>
+                    <% horarios.forEach(h => { %>
+                        <option value="<%= h.id_disp %>"><%= h.fecha %> a las <%= h.hora %> hs</option>
+                    <% }); %>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit">Confirmar Reserva de Turno</button>
+            
+            <p style="margin-top: 1.5rem; font-size: 0.9rem;">
+                <a href="/auth/login" style="color: #1992d4; text-decoration: none;">← Volver al Panel</a>
+            </p>
+        </form>
+    </div>
+</body>
+</html>

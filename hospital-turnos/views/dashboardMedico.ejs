@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Médico - Sistema Hospitalario</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .medico-container { display: flex; gap: 2rem; max-width: 900px; width: 100%; text-align: left; }
+        .panel-left { flex: 1; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .panel-right { flex: 1; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.5rem; border-bottom: 1px solid #cbd5e1; text-align: left; font-size: 0.9rem; }
+        th { background-color: #f1f5f9; color: #486581; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="medico-container">
+        
+        <div class="panel-left">
+            <h2>Dr. <%= medico.nombre %></h2>
+            <h3>Especialidad: <%= medico.especialidad %></h3>
+            
+            <h4 style="margin-top: 1.5rem; color: #102a43;">📅 Mis Pacientes Asignados (RF-25)</h4>
+            <% if (misTurnos.length === 0) { %>
+                <p style="font-size: 0.9rem; color: #627d98; margin-top: 0.5rem;">No hay turnos reservados para usted todavía.</p>
+            <% } else { %>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>DNI Paciente</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% misTurnos.forEach(t => { %>
+                            <tr>
+                                <td><%= t.fecha %></td>
+                                <td><%= t.hora %> hs</td>
+                                <td><%= t.pacienteDni %></td>
+                                <td><span class="badge"><%= t.estado %></span></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            <% } %>
+            
+            <p style="margin-top: 2rem;"><a href="/auth/login" style="color: #b82525; text-decoration: none; font-size: 0.9rem;">← Cerrar Sesión</a></p>
+        </div>
+
+        <div class="panel-right">
+            <h4 style="color: #102a43; margin-bottom: 1rem;">⚙️ Configurar Disponibilidad Atendida (RF-06)</h4>
+            
+            <form action="/medico/disponibilidad" method="POST">
+                <div class="form-group">
+                    <label for="fecha">Seleccionar Fecha:</label>
+                    <input type="date" id="fecha" name="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="hora">Seleccionar Horario:</label>
+                    <input type="time" id="hora" name="hora" required>
+                </div>
+                <button type="submit" class="btn-submit" style="background-color: #0ea5e9;">Publicar Horario Libre</button>
+            </form>
+
+            <h4 style="margin-top: 2rem; color: #102a43; font-size: 1rem;">Mis Horarios Ofrecidos:</h4>
+            <div style="max-height: 150px; overflow-y: auto; margin-top: 0.5rem; border: 1px solid #e2e8f0; padding: 0.5rem; border-radius: 6px;">
+                <% misHorarios.forEach(h => { %>
+                    <p style="font-size: 0.85rem; padding: 0.25rem 0; color: #486581;">• <%= h.fecha %> a las <%= h.hora %> hs</p>
+                <% }) %>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

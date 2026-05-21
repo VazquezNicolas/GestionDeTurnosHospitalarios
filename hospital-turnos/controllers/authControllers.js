@@ -26,7 +26,7 @@ exports.postLogin = (req, res) => {
                 // En vez de un res.send, ahora renderizamos la vista del Dashboard
                 return res.render('dashboardAdmin');
             case 'Profesional':
-                return res.send('<h1>Panel Médico (Próximamente)</h1>');
+                return res.redirect('/medico/dashboard');
             case 'Paciente':
                 return res.send('<h1>Portal del Paciente (Próximamente)</h1>');
             case 'Laboratorio':
