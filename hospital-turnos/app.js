@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-
 //Config
 const { conectarDB, sequelize } = require('./config/database');
 
@@ -18,6 +17,9 @@ const Paciente = require('./models/pacienteModel');
 const app = express();
 const PORT = 3000;
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Configuración del motor de plantillas EJS (La "V" de MVC)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -30,8 +32,8 @@ app.use(express.static(path.join(__dirname, 'public'))); // Archivos estáticos 
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
 
-app.get('/pacientes/registrar', pacienteController.getRegistrar);
-app.post('/pacientes/registrar', pacienteController.postRegistrar);
+app.get('/pacientes/registrar', pacienteController.getRegistroPaciente);
+app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
 
 app.get('/medico/dashboard', medicoController.getDashboard);
 app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);

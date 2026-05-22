@@ -14,8 +14,9 @@
         <% if (typeof error !== 'undefined' && error) { %>
             <div class="alert alert-danger"><%= error %></div>
         <% } %>
-        <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= success %></div>
+        <!-- 👇 UNIFICADO: Cambiamos 'success' por 'exito' para que coincida con el controlador -->
+        <% if (typeof exito !== 'undefined' && exito) { %>
+            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= exito %></div>
         <% } %>
 
         <form action="/pacientes/registrar" method="POST">
@@ -35,9 +36,20 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="fechaNac">Fecha de Nacimiento:</label>
-                <input type="date" id="fechaNac" name="fechaNac" required>
+            <!-- 👇 REORGANIZADO: Pusimos la fecha y agregamos el campo SEXO que faltaba en paralelo -->
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="sexo">Sexo biológico:</label>
+                    <select id="sexo" name="sexo" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; height: 38px;">
+                        <option value="" disabled selected>Seleccione...</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
@@ -49,7 +61,7 @@
                 <label for="email">Correo Electrónico:</label>
                 <input type="email" id="email" name="email" required placeholder="juan.perez@example.com">
             </div>
-
+            
             <button type="submit" class="btn-submit">Registrar Paciente</button>
             
             <p style="margin-top: 1.5rem; font-size: 0.9rem;">

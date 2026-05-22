@@ -1,43 +1,49 @@
-// Simulación temporal de la tabla Paciente en la Base de Datos
-const pacientesMock = [
-    { id: 1, dni: '12345678', nombre: 'Juan', apellido: 'Pérez', fechaNac: '1990-05-15', telefono: '1122334455', email: 'juan@email.com' }
-];
+// Importamos el modelo real de Paciente
+const Paciente = require('../models/pacienteModel');
 
-// Vista del formulario de registro
-exports.getRegistrar = (req, res) => {
-    res.render('registrarPaciente', { error: undefined, success: undefined });
+// 1. Vista: Mostrar el formulario de registro (Queda igual)
+exports.getRegistroPaciente = (req, res) => {
+    res.render('registrarPaciente', { error: undefined, exito: undefined }); // 👈 Cambiado a 'registrarPaciente'
 };
 
-// Acción de registrar (POST)
-exports.postRegistrar = (req, res) => {
-    const { dni, nombre, apellido, fechaNac, telefono, email } = req.body; // [cite: 233]
+// 2. Acción: Procesar el formulario (POST) - Ahora es ASÍNCRONA
+exports.postRegistroPaciente = async (req, res) => {
+    const { dni, nombre, apellido, fecha_nacimiento, sexo, telefono, email, direccion, historia_clinica } = req.body;
 
-    // Validación del RF-01: Validar que el DNI no esté duplicado 
-    const existePaciente = pacientesMock.find(p => p.dni === dni);
+    try {
+        const pacienteExistente = await Paciente.findOne({ where: { dni } });
+        
+        if (pacienteExistente) {
+            return res.render('registrarPaciente', { 
+                error: `Ya existe un paciente registrado con el DNI ${dni}.`, 
+                exito: undefined 
+            });
+        }
 
-    if (existePaciente) {
+        // BIEN DE BASE DE DATOS: Si no existe, lo insertamos físicamente en MySQL
+        await Paciente.create({
+            dni,
+            nombre,
+            apellido,
+            fecha_nacimiento, // Sequelize se encarga de formatearlo a DATE (AAAA-MM-DD)
+            sexo,
+            telefono,
+            email,
+            direccion,
+            historia_clinica
+        });
+
+        // Si todo sale bien, recargamos la vista avisando el éxito
         return res.render('registrarPaciente', { 
-            error: `El DNI ${dni} ya se encuentra registrado en el sistema.`,
-            success: undefined 
+            error: undefined, 
+            exito: 'Paciente registrado en el sistema hospitalario con éxito.' 
+        });
+
+    } catch (error) {
+        console.error ('Error al registrar paciente en MySQL:', error);
+        return res.render('registrarPaciente', { 
+            error: 'Ocurrió un error interno al intentar guardar el paciente.', 
+            exito: undefined 
         });
     }
-
-    // Si no existe, simulamos el guardado en la base de datos
-    const nuevoPaciente = {
-        id: pacientesMock.length + 1,
-        dni,
-        nombre,
-        apellido,
-        fechaNac,
-        telefono,
-        email
-    };
-    pacientesMock.push(nuevoPaciente);
-    
-    console.log('Pacientes registrados actualmente:', pacientesMock);
-
-    res.render('registrarPaciente', { 
-        error: undefined, 
-        success: `Paciente ${nombre} ${apellido} registrado con éxito.` 
-    });
 };
