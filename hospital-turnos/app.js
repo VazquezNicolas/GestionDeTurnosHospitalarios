@@ -1,11 +1,19 @@
 const express = require('express');
 const path = require('path');
 
+//Config
+const { conectarDB, sequelize } = require('./config/database');
+
 //Controladores
 const authController = require('./controllers/authControllers');
 const pacienteController = require('./controllers/pacienteController');
 const medicoController = require('./controllers/medicoController');
 const turnoController = require('./controllers/turnoController');
+
+//Modelos
+const Rol = require('./models/rolModel');
+const Usuario = require('./models/usuarioModel');
+const Paciente = require('./models/pacienteModel');
 
 const app = express();
 const PORT = 3000;
@@ -36,6 +44,18 @@ app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/', (req, res) => {
     res.redirect('/auth/login');
 });
+
+const inicializarSistema = async () => {
+    await conectarDB();
+    try {
+        // alter: true le avisa a Sequelize que respete las tablas que hiciste en Workbench sin borrarlas
+        await sequelize.sync({ alter: true });
+        console.log('Modelos de Sequelize vinculados con las tablas de MySQL con éxito.');
+    } catch (err) {
+        console.error('Error al sincronizar modelos con MySQL:', err);
+    }
+};
+inicializarSistema();
 
 // Inicio del servidor
 app.listen(PORT, () => {
