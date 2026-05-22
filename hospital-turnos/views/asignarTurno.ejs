@@ -7,47 +7,64 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="login-container" style="max-width: 500px;">
-        <h2>Gestión de Citas</h2>
-        <h3>RF-08: Asignar Nuevo Turno</h3>
+    <div class="login-container" style="max-width: 550px; margin: 2rem auto;">
+        <h2>Gestión de Agendas</h2>
+        <h3>RF-02: Asignación de Turno Médico</h3>
 
         <% if (typeof error !== 'undefined' && error) { %>
             <div class="alert alert-danger"><%= error %></div>
         <% } %>
-        <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= success %></div>
+        <% if (typeof exito !== 'undefined' && exito) { %>
+            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= exito %></div>
         <% } %>
 
         <form action="/turnos/asignar" method="POST">
+            
+            <!-- Desplegable dinámico de Pacientes -->
             <div class="form-group">
-                <label for="pacienteDni">DNI del Paciente Pasivo:</label>
-                <input type="text" id="pacienteDni" name="pacienteDni" required placeholder="Ej: 12345678">
-            </div>
-
-            <div class="form-group">
-                <label for="profesionalId">Profesional / Médico:</label>
-                <select id="profesionalId" name="profesionalId" required style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px;">
-                    <option value="">Seleccione un profesional</option>
-                    <% profesionales.forEach(médico => { %>
-                        <option value="<%= médico.id %>"><%= médico.nombre %> (<%= médico.especialidad %>)</option>
+                <label for="pacienteId">Seleccionar Paciente:</label>
+                <select id="pacienteId" name="pacienteId" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; height: 38px;">
+                    <option value="" disabled selected>Seleccione un paciente registrado...</option>
+                    <% pacientes.forEach(paciente => { %>
+                        <option value="<%= paciente.id %>"><%= paciente.apellido %>, <%= paciente.nombre %> (DNI: <%= paciente.dni %>)</option>
                     <% }); %>
                 </select>
             </div>
 
+            <!-- Desplegable dinámico de Médicos -->
             <div class="form-group">
-                <label for="turnoIdDisp">Fecha y Horario Disponible:</label>
-                <select id="turnoIdDisp" name="turnoIdDisp" required style="width: 100%; padding: 0.75rem; border: 2px solid #cbd5e1; border-radius: 8px;">
-                    <option value="">Seleccione un horario libre</option>
-                    <% horarios.forEach(h => { %>
-                        <option value="<%= h.id_disp %>"><%= h.fecha %> a las <%= h.hora %> hs</option>
+                <label for="medicoId">Seleccionar Profesional Médico:</label>
+                <select id="medicoId" name="medicoId" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; height: 38px;">
+                    <option value="" disabled selected>Seleccione un médico disponible...</option>
+                        <% medicos.forEach(medico => { %>
+                        <!-- Usamos id_profesional, apellido y nombre según la estructura real -->
+                        <option value="<%= medico.id_profesional %>">Dr/Dra. <%= medico.apellido %>, <%= medico.nombre %> (Mat: <%= medico.matricula %>)</option>
                     <% }); %>
                 </select>
             </div>
 
-            <button type="submit" class="btn-submit">Confirmar Reserva de Turno</button>
+            <!-- Fecha y Hora en paralelo -->
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="fecha">Fecha del Turno:</label>
+                    <input type="date" id="fecha" name="fecha" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="hora">Horario:</label>
+                    <input type="time" id="hora" name="hora" required>
+                </div>
+            </div>
+
+            <!-- Motivo clínico -->
+            <div class="form-group">
+                <label for="motivo">Motivo de la Consulta / Especialidad:</label>
+                <input type="text" id="motivo" name="motivo" required placeholder="Ej: Control traumatología, Cardiología, etc.">
+            </div>
+            
+            <button type="submit" class="btn-submit">Confirmar y Agendar Turno</button>
             
             <p style="margin-top: 1.5rem; font-size: 0.9rem;">
-                <a href="/auth/login" style="color: #1992d4; text-decoration: none;">← Volver al Panel</a>
+                <a href="/dashboard/admin" style="color: #1992d4; text-decoration: none;">← Volver al Panel General</a>
             </p>
         </form>
     </div>
