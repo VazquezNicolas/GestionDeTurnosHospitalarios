@@ -9,10 +9,13 @@ const pacienteController = require('./controllers/pacienteController');
 const medicoController = require('./controllers/medicoController');
 const turnoController = require('./controllers/turnoController');
 
+console.log('CONTENIDO DE TURNO_CONTROLLER:', turnoController);
+
 //Modelos
 const Rol = require('./models/rolModel');
 const Usuario = require('./models/usuarioModel');
 const Paciente = require('./models/pacienteModel');
+const Turno = require('./models/turnoModel');
 
 const app = express();
 const PORT = 3000;
@@ -41,7 +44,6 @@ app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
 app.get('/medico/dashboard', medicoController.getDashboard);
 app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
 
-app.get('/turnos/assignar', turnoController.getAsignarTurno); // Nota: mantener coherencia url o usar /turnos/asignar
 app.get('/turnos/asignar', turnoController.getAsignarTurno); 
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 

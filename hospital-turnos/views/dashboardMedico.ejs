@@ -92,7 +92,7 @@
 
         <!-- Tabla de Agenda diaria simulada por ahora -->
         <div class="agenda-section">
-            <h3>📅 Próximos Pacientes en Espera</h3>
+            <h3> Próximos Pacientes en Espera</h3>
             <table class="table-turnos">
                 <thead>
                     <tr>
@@ -103,16 +103,23 @@
                         <th>Estado</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Fila estática de muestra hasta conectar el cruzamiento de tablas -->
-                    <tr>
-                        <td>14:30 hs</td>
-                        <td>Carlos Rodríguez</td>
-                        <td>32.451.982</td>
-                        <td>Control Clínico General</td>
-                        <td><span class="badge-status">En Espera</span></td>
-                    </tr>
-                </tbody>
+<tbody>
+    <% if (turnos.length === 0) { %>
+        <tr>
+            <td colspan="5" style="text-align: center; color: #999; padding: 2rem;">No tiene turnos asignados para el día de hoy.</td>
+        </tr>
+    <% } else { %>
+        <% turnos.forEach(turno => { %>
+            <tr>
+                <td><%= turno.hora %> hs</td>
+                <td><%= turno.paciente.apellido %>, <%= turno.paciente.nombre %></td>
+                <td><%= turno.paciente.dni %></td>
+                <td><%= turno.motivo %></td>
+                <td><span class="badge-status" style="background: #e3f9e5; color: #1f7a28;"><%= turno.estado %></span></td>
+            </tr>
+        <% }); %>
+    <% } %>
+</tbody>
             </table>
         </div>
     </div>

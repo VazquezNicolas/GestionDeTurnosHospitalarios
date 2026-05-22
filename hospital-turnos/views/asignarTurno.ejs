@@ -23,22 +23,25 @@
             <!-- Desplegable dinámico de Pacientes -->
             <div class="form-group">
                 <label for="pacienteId">Seleccionar Paciente:</label>
-                <select id="pacienteId" name="pacienteId" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; height: 38px;">
-                    <option value="" disabled selected>Seleccione un paciente registrado...</option>
+                <select name="pacienteId" id="pacienteId" required>
+                    <option value="">Seleccione un paciente registrado...</option>
                     <% pacientes.forEach(paciente => { %>
-                        <option value="<%= paciente.id %>"><%= paciente.apellido %>, <%= paciente.nombre %> (DNI: <%= paciente.dni %>)</option>
+                        <option value="<%= paciente.id_paciente || paciente.id %>">
+                            <%= paciente.apellido %>, <%= paciente.nombre %> (DNI: <%= paciente.dni %>)
+                        </option>
                     <% }); %>
                 </select>
             </div>
 
-            <!-- Desplegable dinámico de Médicos -->
+            <!-- Desplegable dinámico de Médicos (¡Corregido!) -->
             <div class="form-group">
                 <label for="medicoId">Seleccionar Profesional Médico:</label>
-                <select id="medicoId" name="medicoId" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; height: 38px;">
+                <select id="medicoId" name="medicoId" required>
                     <option value="" disabled selected>Seleccione un médico disponible...</option>
-                        <% medicos.forEach(medico => { %>
-                        <!-- Usamos id_profesional, apellido y nombre según la estructura real -->
-                        <option value="<%= medico.id_profesional %>">Dr/Dra. <%= medico.apellido %>, <%= medico.nombre %> (Mat: <%= medico.matricula %>)</option>
+                    <% medicos.forEach(medico => { %>
+                        <option value="<%= medico.id_profesional || medico.id %>">
+                            Dr/Dra. <%= medico.apellido %>, <%= medico.nombre %> (Mat: <%= medico.matricula %>)
+                        </option>
                     <% }); %>
                 </select>
             </div>

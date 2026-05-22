@@ -1,19 +1,17 @@
 const Paciente = require('../models/pacienteModel');
-const Usuario = require('../models/usuarioModel'); // Asumiendo que los médicos están en Usuario o tienen su propio modelo
 const Profesional = require('../models/profesionalModel');
-// const Turno = require('../models/turnoModel'); // Descomentar cuando tengan el modelo de Turno listo
+const Turno = require('../models/turnoModel');
 
-// 1. Cargar el formulario con datos reales de la BD
-exports.getAsignarTurno = async (req, res) => {
+// 1. CARGAR EL FORMULARIO (GET)
+const getAsignarTurno = async (req, res) => {
     try {
+        // Buscamos usando los campos nativos de tus modelos
         const pacientes = await Paciente.findAll({ order: [['apellido', 'ASC']] });
-        
-        // Buscamos directo en la tabla profesional, ordenados por apellido
         const medicos = await Profesional.findAll({ order: [['apellido', 'ASC']] }); 
 
         res.render('asignarTurno', {
             pacientes,
-            medicos, // Ahora viaja la lista de profesionales reales
+            medicos, 
             error: undefined,
             exito: undefined
         });
@@ -28,51 +26,56 @@ exports.getAsignarTurno = async (req, res) => {
     }
 };
 
-// 2. Procesar y guardar el turno en MySQL
-// 2. Procesar el envío del formulario del turno
-exports.postAsignarTurno = async (req, res) => {
-    // Capturamos lo que viaja desde el formulario
+// 2. GUARDAR EL TURNO (POST)
+const postAsignarTurno = async (req, res) => {
     const { pacienteId, medicoId, fecha, hora, motivo } = req.body;
 
     try {
-        // [Simulación de guardado temporal] 
-        // Cuando activen el modelo de turnos, acá irá: await Turno.create({...});
-        console.log(`Turno recibido: Paciente ${pacienteId}, Médico ${medicoId}, el ${fecha} a las ${hora}`);
+        // Convertimos explícitamente a enteros garantizando que no viaje un string vacío ''
+        const idPacienteClean = parseInt(pacienteId, 10);
+        const idMedicoClean = parseInt(medicoId, 10);
 
-        // VOLVEMOS A CARGAR LAS LISTAS para que la vista las pueda dibujar de nuevo
+        if (!idPacienteClean || !idMedicoClean) {
+            throw new Error('Debe seleccionar un paciente y un médico válidos.');
+        }
+
+        // 🔥 INSERT RESPETANDO TU TABLA DE SQL
+        await Turno.create({
+            id_paciente: idPacienteClean,
+            id_profesional: idMedicoClean,
+            id_consultorio: 1, // 👈 Pasamos un consultorio válido fijo para cumplir el NOT NULL del SQL
+            fecha: fecha,
+            hora: hora,
+            motivo_consulta: motivo, // Mapea con la columna real de tu SQL
+            estado: 'Reservado'       // Mapea con el estado de tu SQL
+        });
+
         const listaPacientes = await Paciente.findAll({ order: [['apellido', 'ASC']] });
         const listaMedicos = await Profesional.findAll({ order: [['apellido', 'ASC']] });
 
-        // Renderizamos con el cartel verde de éxito
         res.render('asignarTurno', {
-            pacientes: listaPacientes,  // El nombre acá DEBE ser 'pacientes' para matchear con el .ejs
-            medicos: listaMedicos,      // El nombre acá DEBE ser 'medicos'
+            pacientes: listaPacientes,
+            medicos: listaMedicos,
             error: undefined,
-            exito: '¡Turno asignado y programado con éxito en el sistema!'
+            exito: '¡Turno asignado y guardado físicamente en la base de datos!'
         });
 
     } catch (error) {
-        console.error('Error interno en postAsignarTurno:', error);
+        console.error('❌ Error al insertar el turno en la BD:', error);
         
-        // Salvaguarda por si explota cualquier consulta, para que no tire "is not defined"
-        try {
-            const listaPacientes = await Paciente.findAll({ order: [['apellido', 'ASC']] });
-            const listaMedicos = await Profesional.findAll({ order: [['apellido', 'ASC']] });
-            
-            res.render('asignarTurno', {
-                pacientes: listaPacientes,
-                medicos: listaMedicos,
-                error: 'Ocurrió un error interno al intentar guardar el turno.',
-                exito: undefined
-            });
-        } catch (errCritico) {
-            // Si llega a fallar la base de datos por completo, mandamos arrays vacíos para evitar el crash
-            res.render('asignarTurno', {
-                pacientes: [],
-                medicos: [],
-                error: 'Error crítico de conexión con la base de datos.',
-                exito: undefined
-            });
-        }
+        const listaPacientes = await Paciente.findAll({ order: [['apellido', 'ASC']] });
+        const listaMedicos = await Profesional.findAll({ order: [['apellido', 'ASC']] });
+        
+        res.render('asignarTurno', {
+            pacientes: listaPacientes,
+            medicos: listaMedicos,
+            error: 'Ocurrió un error: Verifique las restricciones de claves foráneas en su SQL.',
+            exito: undefined
+        });
     }
+};
+
+module.exports = {
+    getAsignarTurno,
+    postAsignarTurno
 };
