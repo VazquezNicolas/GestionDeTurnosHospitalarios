@@ -67,7 +67,7 @@ exports.getDashboardAdmin = async (req, res) => {
             error: undefined 
         });
     } catch (error) {
-        console.error('❌ Error al cargar las métricas del Dashboard:', error);
+        console.error(' Error al cargar las métricas del Dashboard:', error);
         res.render('dashboardAdmin', { 
             totalPacientes: 0, 
             totalUsuarios: 0, 

@@ -8,23 +8,24 @@ global.turnosDisponiblesMock = global.turnosDisponiblesMock || [
 // Traemos los turnos que ya fueron asignados por el administrativo
 global.turnosAsignadosMock = global.turnosAsignadosMock || [];
 
-exports.getDashboard = (req, res) => {
-    // Simulamos que se logueó el Dr. Gonzalo Cerimedo (ID: 101)
-    const medicoId = 101;
-    const miInfo = profesionalesMock.find(m => m.id === medicoId);
+exports.getDashboard = async (req, res) => {
+    try {
+        // Dejamos preparada la lógica para cuando completemos el módulo de turnos
+        // const cantidadTurnos = await Turno.count({ where: { medicoId: req.session.usuarioId } });
+        const turnosPendientesHoy = 0; 
 
-    // Filtrar las disponibilidades creadas por este médico (RF-06)
-    const misHorarios = global.turnosDisponiblesMock.filter(h => h.profesionalId === medicoId);
-
-    // Filtrar los turnos que los pacientes ya le reservaron (Agenda diaria / RF-25)
-    const misTurnosReservados = global.turnosAsignadosMock.filter(t => t.profesionalId === medicoId);
-
-    res.render('dashboardMedico', {
-        medico: miInfo,
-        misHorarios: misHorarios,
-        misTurnos: misTurnosReservados,
-        success: undefined
-    });
+        // Renderizamos la vista del médico pasándole sus estadísticas correspondientes
+        res.render('dashboardMedico', {
+            turnosPendientes: turnosPendientesHoy,
+            error: undefined
+        });
+    } catch (error) {
+        console.error('Error al cargar el Dashboard del Médico:', error);
+        res.render('dashboardMedico', {
+            turnosPendientes: 0,
+            error: 'No se pudieron sincronizar sus turnos en tiempo real.'
+        });
+    }
 };
 
 // RF-06: Configurar / Agregar nueva disponibilidad
