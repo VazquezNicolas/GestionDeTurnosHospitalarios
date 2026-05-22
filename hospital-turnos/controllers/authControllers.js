@@ -1,40 +1,54 @@
-const usuariosMock = [
-    { user: 'admin', pass: 'admin123', rol: 'Administrador' },
-    { user: 'medico', pass: 'medico123', rol: 'Profesional' },
-    { user: 'paciente', pass: 'paciente123', rol: 'Paciente' },
-    { user: 'lab', pass: 'lab123', rol: 'Laboratorio' }
-];
+// 1. IMPORTAMOS EL MODELO REAL DESDE NUESTRA CARPETA
+const Usuario = require('../models/usuarioModel');
+const Rol = require('../models/rolModel'); // Lo importamos para poder leer el nombre del rol en el JOIN
 
+// Vista para renderizar el formulario de login (Queda igual)
 exports.getLogin = (req, res) => {
-    // Renderiza la vista login.ejs
-    res.render('login');
+    res.render('login', { error: undefined });
 };
 
-exports.postLogin = (req, res) => {
+// Acción de validar el Login (POST) - Ahora es ASÍNCRONA para esperar a la Base de Datos
+exports.postLogin = async (req, res) => {
     const { username, password } = req.body;
 
-    const usuarioEncontrado = usuariosMock.find(
-        u => u.user === username && u.pass === password
-    );
+    try {
+        // 2. CONSULTA REAL A MYSQL: Busca un usuario que coincida con el nombre tipeado
+        // Usamos "include" que es el equivalente al INNER JOIN de Sequelize
+        const usuarioEncontrado = await Usuario.findOne({
+            where: { nombre_usuario: username },
+            include: [{ model: Rol, as: 'rol' }] // Se trae los datos del rol asociado
+        });
 
-    if (usuarioEncontrado) {
-        console.log(`Logueado con éxito como: ${usuarioEncontrado.rol}`);
-        
-        // Modificamos el ruteo dinámico según el Rol
-        switch (usuarioEncontrado.rol) {
-            case 'Administrador':
-                // En vez de un res.send, ahora renderizamos la vista del Dashboard
-                return res.render('dashboardAdmin');
-            case 'Profesional':
-                return res.redirect('/medico/dashboard');
-            case 'Paciente':
-                return res.send('<h1>Portal del Paciente (Próximamente)</h1>');
-            case 'Laboratorio':
-                return res.send('<h1>Módulo de Laboratorio (Próximamente)</h1>');
-            default:
-                return res.redirect('/auth/login');
+        console.log('--- DETECTOR DE LOGIN ---');
+        console.log('Datos tipeados en el navegador -> Usuario:', username, '| Contraseña:', password);
+        console.log('Datos reales de la Base de Datos -> Encontrado:', usuarioEncontrado ? 'SÍ' : 'NO', '| Contraseña en BD:', usuarioEncontrado ? usuarioEncontrado.contrasena : 'N/A');
+
+        // 3. VALIDACIÓN DE CREDENCIALES
+        // Verificamos si el usuario existe y si la contraseña coincide con la de la tabla
+        if (usuarioEncontrado && usuarioEncontrado.contrasena === password) {
+            
+            console.log(`Logueado con éxito desde MySQL. Rol: ${usuarioEncontrado.rol.nombre_rol}`);
+            
+            // 4. DIRECCIONAMIENTO SEGÚN EL ROL REAL DE LA BASE DE DATOS
+            switch (usuarioEncontrado.rol.nombre_rol) {
+                case 'Administrador':
+                    return res.render('dashboardAdmin');
+                case 'Profesional':
+                    return res.redirect('/medico/dashboard');
+                case 'Paciente':
+                    return res.send('<h1>Portal del Paciente (Próximamente)</h1>');
+                case 'Laboratorio':
+                    return res.send('<h1>Módulo de Laboratorio (Próximamente)</h1>');
+                default:
+                    return res.redirect('/auth/login');
+            }
+        } else {
+            // Si el usuario no existe o la contraseña está mal
+            return res.render('login', { error: 'Usuario o contraseña incorrectos.' });
         }
-    } else {
-        res.render('login', { error: 'Usuario o contraseña incorrectos.' });
+
+    } catch (error) {
+        console.error(' Error al validar el login en la base de datos:', error);
+        return res.render('login', { error: 'Ocurrió un error interno en el servidor.' });
     }
 };

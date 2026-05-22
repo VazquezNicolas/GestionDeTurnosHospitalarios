@@ -12,7 +12,7 @@ const Usuario = sequelize.define('Usuario', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
-    nombre_usuario: { // Nombre exacto del campo corregido en tu DER
+    nombre_usuario: { // Asegurate de que acá diga nombre_usuario
         type: DataTypes.STRING(50),
         allowNull: false,
         unique: true
