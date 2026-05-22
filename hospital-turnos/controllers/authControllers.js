@@ -1,6 +1,7 @@
 // 1. IMPORTAMOS EL MODELO REAL DESDE NUESTRA CARPETA
 const Usuario = require('../models/usuarioModel');
 const Rol = require('../models/rolModel'); // Lo importamos para poder leer el nombre del rol en el JOIN
+const Paciente = require('../models/pacienteModel');
 
 // Vista para renderizar el formulario de login (Queda igual)
 exports.getLogin = (req, res) => {
@@ -32,7 +33,7 @@ exports.postLogin = async (req, res) => {
             // 4. DIRECCIONAMIENTO SEGÚN EL ROL REAL DE LA BASE DE DATOS
             switch (usuarioEncontrado.rol.nombre_rol) {
                 case 'Administrador':
-                    return res.render('dashboardAdmin');
+                    return res.redirect('/dashboard/admin');
                 case 'Profesional':
                     return res.redirect('/medico/dashboard');
                 case 'Paciente':
@@ -50,5 +51,27 @@ exports.postLogin = async (req, res) => {
     } catch (error) {
         console.error(' Error al validar el login en la base de datos:', error);
         return res.render('login', { error: 'Ocurrió un error interno en el servidor.' });
+    }
+};
+
+exports.getDashboardAdmin = async (req, res) => {
+    try {
+        // Consultas en tiempo real a MySQL
+        const totalPacientes = await Paciente.count();
+        const totalUsuarios = await Usuario.count({ where: { estado: 'Activo' } });
+
+        // Renderizamos la vista pasando las métricas correspondientes
+        res.render('dashboardAdmin', { 
+            totalPacientes, 
+            totalUsuarios,
+            error: undefined 
+        });
+    } catch (error) {
+        console.error('❌ Error al cargar las métricas del Dashboard:', error);
+        res.render('dashboardAdmin', { 
+            totalPacientes: 0, 
+            totalUsuarios: 0, 
+            error: 'No se pudieron cargar las estadísticas en tiempo real.' 
+        });
     }
 };

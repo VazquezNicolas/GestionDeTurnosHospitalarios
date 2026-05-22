@@ -29,6 +29,9 @@ app.use(express.urlencoded({ extended: true })); // Para entender los datos envi
 app.use(express.static(path.join(__dirname, 'public'))); // Archivos estáticos (CSS, Imágenes)
 
 // Mapeo de Rutas de Autenticación
+
+app.get('/dashboard/admin', authController.getDashboardAdmin);
+
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
 
