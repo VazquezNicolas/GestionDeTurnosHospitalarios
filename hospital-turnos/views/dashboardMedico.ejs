@@ -3,125 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Médico - Sistema Hospitalario</title>
+    <title>Dashboard Médico - Sistema Hospitalario</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
-        .medico-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-        .card-medico {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid #2ecc71;
-            text-align: center;
-        }
-        .card-medico h3 {
-            margin: 0;
-            font-size: 0.9rem;
-            color: #666;
-            text-transform: uppercase;
-        }
-        .card-medico .number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #333;
-            margin: 0.5rem 0 0 0;
-        }
-        .agenda-section {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-top: 1.5rem;
-        }
-        .table-turnos {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .table-turnos th, .table-turnos td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .table-turnos th {
-            background-color: #f8f9fa;
-            color: #555;
-        }
-        .badge-status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            background: #ffeaa7;
-            color: #d63031;
-        }
+        .dashboard-container { max-width: 1000px; margin: 2rem auto; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stats-bar { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { flex: 1; padding: 1rem; background: #f0f4f8; border-left: 5px solid #1992d4; border-radius: 4px; }
+        .stat-card h4 { margin: 0; color: #555; font-size: 0.9rem; }
+        .stat-card p { margin: 0.5rem 0 0 0; font-size: 1.8rem; font-weight: bold; color: #1992d4; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; }
+        th { background-color: #334e68; color: white; }
+        tr:hover { background-color: #f5f7fa; }
+        .badge-status { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background: #eef2f6; color: #486581; }
+        .badge-reserved { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
-    <div class="login-container" style="max-width: 900px; margin: 2rem auto;">
-        <!-- Cabecera de usuario -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid #eee; padding-bottom: 1rem;">
-            <div>
-                <h2>Portal del Profesional Médico</h2>
-                <p style="margin: 0; color: #666;">Gestión de Consultorio y Agenda de Pacientes</p>
+    <div class="dashboard-container">
+        <h2>Panel del Profesional Médico</h2>
+        <h3>Agenda de Turnos y Pacientes Asignados</h3>
+
+        <!-- Barra de estado rápida -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <h4>Turnos Sincronizados en la BD</h4>
+                <p><%= turnosPendientes %></p>
             </div>
-            <a href="/auth/login" style="background: #e74c3c; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold;">Cerrar Sesión</a>
+            <div class="stat-card" style="border-left-color: #2cb34a;">
+                <h4>Estado de Conexión</h4>
+                <p style="color: #2cb34a; font-size: 1.2rem; margin-top: 0.8rem;">● En Línea (MySQL)</p>
+            </div>
         </div>
 
         <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-danger" style="margin-bottom: 1.5rem;"><%= error %></div>
+            <div class="alert alert-danger"><%= error %></div>
         <% } %>
 
-        <!-- Métrica del día -->
-        <div class="medico-grid">
-            <div class="card-medico">
-                <h3>Turnos Asignados Hoy</h3>
-                <p class="number"><%= turnosPendientes %></p>
-            </div>
-            <div class="card-medico" style="border-left-color: #9b59b6;">
-                <h3>Mi Estado de Guardia</h3>
-                <p class="number" style="font-size: 1.8rem; margin-top: 1rem; color: #27ae60;">Disponible</p>
-            </div>
-        </div>
-
-        <!-- Tabla de Agenda diaria simulada por ahora -->
-        <div class="agenda-section">
-            <h3> Próximos Pacientes en Espera</h3>
-            <table class="table-turnos">
-                <thead>
+        <!-- Tabla de pacientes asignados -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Horario</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th>DNI</th>
+                    <th>Motivo de Consulta / Especialidad</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (turnos.length === 0) { %>
                     <tr>
-                        <th>Horario</th>
-                        <th>Paciente</th>
-                        <th>DNI</th>
-                        <th>Motivo de Consulta</th>
-                        <th>Estado</th>
+                        <td colspan="6" style="text-align: center; color: #777; padding: 2rem;">
+                            No tiene pacientes asignados para los próximos días.
+                        </td>
                     </tr>
-                </thead>
-<tbody>
-    <% if (turnos.length === 0) { %>
-        <tr>
-            <td colspan="5" style="text-align: center; color: #999; padding: 2rem;">No tiene turnos asignados para el día de hoy.</td>
-        </tr>
-    <% } else { %>
-        <% turnos.forEach(turno => { %>
-            <tr>
-                <td><%= turno.hora %> hs</td>
-                <td><%= turno.paciente.apellido %>, <%= turno.paciente.nombre %></td>
-                <td><%= turno.paciente.dni %></td>
-                <td><%= turno.motivo %></td>
-                <td><span class="badge-status" style="background: #e3f9e5; color: #1f7a28;"><%= turno.estado %></span></td>
-            </tr>
-        <% }); %>
-    <% } %>
-</tbody>
-            </table>
-        </div>
+                <% } else { %>
+                    <% turnos.forEach(turno => { %>
+                        <tr>
+                            <td><strong><%= turno.hora %> hs</strong></td>
+                            <td><%= turno.fecha %></td>
+                            <td>
+                                <% if (turno.paciente) { %>
+                                    <%= turno.paciente.apellido %>, <%= turno.paciente.nombre %>
+                                <% } else { %>
+                                    <span style="color: red;">Paciente no vinculado</span>
+                                <% } %>
+                            </td>
+                            <td><%= turno.paciente ? turno.paciente.dni : '-' %></td>
+                            <td><%= turno.motivo_consulta || 'Control general' %></td>
+                            <td>
+                                <span class="badge-status <%= turno.estado === 'Reservado' ? 'badge-reserved' : '' %>">
+                                    <%= turno.estado %>
+                                </span>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+
+        <p style="margin-top: 2rem; font-size: 0.9rem;">
+            <a href="/auth/login" style="color: #777; text-decoration: none;">← Cerrar Sesión</a>
+        </p>
     </div>
 </body>
 </html>

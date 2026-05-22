@@ -75,7 +75,32 @@ const postAsignarTurno = async (req, res) => {
     }
 };
 
+// 3. VISTA PARA VER TODOS LOS TURNOS (GET)
+const getVerTurnos = async (req, res) => {
+    try {
+        const listaTurnos = await Turno.findAll({
+            include: [
+                { model: Paciente, as: 'paciente' },
+                { model: Profesional, as: 'profesional' }
+            ],
+            order: [['fecha', 'ASC'], ['hora', 'ASC']] // Ordenados por fecha y hora
+        });
+
+        res.render('verTurnos', {
+            turnos: listaTurnos,
+            error: undefined
+        });
+    } catch (error) {
+        console.error('Error al recuperar listado de turnos:', error);
+        res.render('verTurnos', {
+            turnos: [],
+            error: 'No se pudo cargar el listado de turnos desde la base de datos.'
+        });
+    }
+};
+
 module.exports = {
     getAsignarTurno,
-    postAsignarTurno
+    postAsignarTurno,
+    getVerTurnos
 };

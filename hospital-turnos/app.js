@@ -46,6 +46,7 @@ app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
 
 app.get('/turnos/asignar', turnoController.getAsignarTurno); 
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
+app.get('/turnos', turnoController.getVerTurnos);
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {

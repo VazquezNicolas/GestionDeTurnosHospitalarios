@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado de Turnos - Sistema Hospitalario</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .table-container { max-width: 900px; margin: 2rem auto; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; text-align: left; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; }
+        th { background-color: #1992d4; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background: #e3f9e5; color: #1f7a28; }
+    </style>
+</head>
+<body>
+    <div class="table-container">
+        <h2>Control de Agendas</h2>
+        <h3>Listado Global de Turnos Asignados</h3>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Paciente</th>
+                    <th>Médico / Profesional</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Motivo Consulta</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (turnos.length === 0) { %>
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #777;">No hay turnos agendados en el sistema actualmente.</td>
+                    </tr>
+                <% } else { %>
+                    <% turnos.forEach(turno => { %>
+                        <tr>
+                            <td>#<%= turno.id_turno %></td>
+                            <td><%= turno.paciente ? (turno.paciente.apellido + ', ' + turno.paciente.nombre) : 'No especificado' %></td>
+                            <td><%= turno.profesional ? ('Dr/Dra. ' + turno.profesional.apellido + ', ' + turno.profesional.nombre) : 'No especificado' %></td>
+                            <td><%= turno.fecha %></td>
+                            <td><%= turno.hora %> hs</td>
+                            <td><%= turno.motivo_consulta %></td>
+                            <td><span class="badge"><%= turno.estado %></span></td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+
+        <p style="margin-top: 1.5rem;">
+            <a href="/turnos/asignar" style="color: #1992d4; text-decoration: none;">+ Asignar Nuevo Turno</a> | 
+            <a href="/dashboard/admin" style="color: #777; text-decoration: none;">Volver al Panel General</a>
+        </p>
+    </div>
+</body>
+</html>

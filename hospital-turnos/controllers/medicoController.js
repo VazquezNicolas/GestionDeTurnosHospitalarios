@@ -2,10 +2,10 @@ const Turno = require('../models/turnoModel');
 const Profesional = require('../models/profesionalModel');
 const Paciente = require('../models/pacienteModel');
 
-// 1. Vista del Dashboard (Tus líneas originales intactas)
+// 1. Vista del Dashboard (Conectada a tus médicos reales)
 const getDashboard = async (req, res) => {
     try {
-        // Simulamos capturar el usuario logueado. Supongamos que se logueó con usuario: 'Bilardo'
+        // Podés alternar acá entre 'Bilardo' o 'Favaloro' para ver cómo cambia la agenda de cada uno.
         const medicoLogueado = 'Bilardo'; 
 
         // Buscamos el perfil profesional que coincida con ese apellido
@@ -21,7 +21,7 @@ const getDashboard = async (req, res) => {
             turnosDelMedico = await Turno.findAll({
                 where: { id_profesional: profesional.id_profesional },
                 include: [{ model: Paciente, as: 'paciente' }],
-                order: [['hora', 'ASC']]
+                order: [['fecha', 'ASC'], ['hora', 'ASC']] 
             });
             totalPendientes = turnosDelMedico.length;
         }
@@ -34,7 +34,7 @@ const getDashboard = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error al cargar la agenda del médico:', error);
+        console.error('Error al cargar la agenda del médico:', error);
         res.render('dashboardMedico', {
             turnosPendientes: 0,
             turnos: [],
@@ -43,20 +43,18 @@ const getDashboard = async (req, res) => {
     }
 };
 
-// 2. Procesar Disponibilidad (La función que faltaba para que no explote app.js)
+// 2. Procesar Disponibilidad 
 const postGuardarDisponibilidad = async (req, res) => {
     try {
-        console.log('📅 Datos de disponibilidad recibidos:', req.body);
-        
-        // Dejamos la redirección lista para cuando desarrollen esta lógica a futuro
+        console.log(' Datos de disponibilidad recibidos:', req.body);
         res.redirect('/medico/dashboard');
     } catch (error) {
-        console.error('❌ Error al guardar disponibilidad:', error);
+        console.error('Error al guardar disponibilidad:', error);
         res.status(500).send('Error interno del servidor');
     }
 };
 
-// 📦 EXPORTACIÓN CONTROLADA (Crucial para Express)
+// 📦 EXPORTACIÓN CONTROLADA
 module.exports = {
     getDashboard,
     postGuardarDisponibilidad
