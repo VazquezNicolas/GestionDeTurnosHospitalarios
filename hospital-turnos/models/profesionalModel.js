@@ -20,6 +20,11 @@ const Profesional = sequelize.define('Profesional', {
     apellido: {
         type: DataTypes.STRING(100),
         allowNull: false
+    },
+    id_especialidad: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: 'id_especialidad' 
     }
 }, {
     tableName: 'profesional',

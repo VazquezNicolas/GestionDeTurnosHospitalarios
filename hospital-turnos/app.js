@@ -10,6 +10,7 @@ const authController = require('./controllers/authControllers');
 const pacienteController = require('./controllers/pacienteController');
 const medicoController = require('./controllers/medicoController');
 const turnoController = require('./controllers/turnoController');
+const adminController = require ('./controllers/adminController')
 
 console.log('CONTENIDO DE TURNO_CONTROLLER:', turnoController);
 
@@ -63,7 +64,8 @@ app.get('/turnos/asignar', turnoController.getAsignarTurno);
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/turnos', turnoController.getVerTurnos);
 
-
+app.get('/admin/medicos/nuevo', adminController.getAgregarMedico);
+app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {
