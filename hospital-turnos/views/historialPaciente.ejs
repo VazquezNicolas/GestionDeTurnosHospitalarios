@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Clínico - <%= paciente.apellido %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .historial-container { max-width: 900px; margin: 2rem auto; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .paciente-header { background: #334e68; color: white; padding: 1.5rem; border-radius: 6px; margin-bottom: 2rem; }
+        .paciente-header h2 { margin: 0; font-size: 1.6rem; }
+        .paciente-header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
+        .evolucion-card { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; padding: 1.25rem; border-radius: 6px; margin-bottom: 1.5rem; }
+        .evolucion-meta { display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 0.75rem; }
+        .evolucion-seccion { margin-bottom: 0.5rem; }
+        .evolucion-seccion strong { color: #334e68; display: block; font-size: 0.9rem; }
+        .evolucion-seccion p { margin: 0.25rem 0; color: #334155; white-space: pre-line; }
+        .btn-volver { display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #64748b; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
+        .btn-volver:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div class="historial-container">
+        
+        <!-- Cabecera con datos del Paciente -->
+        <div class="paciente-header">
+            <h2>Historial Clínico Digital</h2>
+            <p><strong>Paciente:</strong> <%= paciente.apellido %>, <%= paciente.nombre %> | <strong>DNI:</strong> <%= paciente.dni %></p>
+        </div>
+
+        <h3>Evoluciones del Paciente</h3>
+
+        <% if (historial.length === 0) { %>
+            <div style="background: #f1f5f9; padding: 2rem; text-align: center; color: #64748b; border-radius: 6px;">
+                No se registran atenciones médicas previas para este paciente en el sistema.
+            </div>
+        <% } else { %>
+            <!-- Bucle para iterar las consultas de la BD -->
+            <% historial.forEach(registro => { %>
+                <div class="evolucion-card">
+                    <div class="evolucion-meta">
+                        <span>📅 <strong>Fecha:</strong> <%= registro.turno.fecha %></span>
+                        <span>👨‍⚕️ <strong>Atendido por:</strong> Dr/a. <%= registro.turno.profesional ? registro.turno.profesional.apellido : 'Especialista' %></span>
+                    </div>
+
+                    <div class="evolucion-seccion">
+                        <strong>Diagnóstico:</strong>
+                        <p><%= registro.diagnostico %></p>
+                    </div>
+
+                    <% if (registro.tratamiento) { %>
+                        <div class="evolucion-seccion">
+                            <strong>Tratamiento Indicado:</strong>
+                            <p><%= registro.tratamiento %></p>
+                        </div>
+                    <% } %>
+
+                    <% if (registro.observaciones) { %>
+                        <div class="evolucion-seccion">
+                            <strong>Observaciones / Notas de Evolución:</strong>
+                            <p><%= registro.observaciones %></p>
+                        </div>
+                    <% } %>
+                </div>
+            <% }) %>
+        <% } %>
+
+        <a href="/medico/dashboard" class="btn-volver">← Volver al Panel</a>
+    </div>
+</body>
+</html>

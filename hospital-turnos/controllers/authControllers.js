@@ -1,77 +1,106 @@
-// 1. IMPORTAMOS EL MODELO REAL DESDE NUESTRA CARPETA
 const Usuario = require('../models/usuarioModel');
-const Rol = require('../models/rolModel'); // Lo importamos para poder leer el nombre del rol en el JOIN
 const Paciente = require('../models/pacienteModel');
+const Turno = require('../models/turnoModel');
 
-// Vista para renderizar el formulario de login (Queda igual)
-exports.getLogin = (req, res) => {
-    res.render('login', { error: undefined });
+// 1. RENDERIZAR LA VISTA DE LOGIN (GET)
+const getLogin = (req, res) => {
+    res.render('login', { error: undefined }); // Asume que tenés un views/login.ejs
 };
 
-// Acción de validar el Login (POST) - Ahora es ASÍNCRONA para esperar a la Base de Datos
-exports.postLogin = async (req, res) => {
+// 2. PROCESAR EL FORMULARIO DE INGRESO (POST)
+
+const getDashboardAdmin = async (req, res) => {
+    try {
+        // 1. Contamos de forma dinámica los registros de cada tabla en MySQL
+        const totalPacientes = await Paciente.count();
+        
+        // Contamos los operadores activos (Rol 1 = Admin/Operador)
+        const totalUsuarios = await Usuario.count({ where: { id_rol: 1 } }); 
+        
+        // Dejamos calculado también el contador de turnos por si te lo pide la línea 97
+        const totalTurnos = await Turno.count(); 
+
+        // 2. Le pasamos ABSOLUTAMENTE TODAS las variables que tu EJS necesita
+        res.render('dashboardAdmin', {
+            totalPacientes: totalPacientes,
+            totalUsuarios: totalUsuarios, // 🔥 Soluciona el error de image_5f57ea.png
+            totalTurnos: totalTurnos      // 🧠 Nos adelantamos al siguiente bloque del HTML
+        });
+
+    } catch (error) {
+        console.error('❌ Error al cargar las estadísticas del admin:', error);
+        // Enviamos valores en 0 para que al menos cargue la interfaz si falla la BD
+        res.render('dashboardAdmin', {
+            totalPacientes: 0,
+            totalUsuarios: 0,
+            totalTurnos: 0
+        });
+    }
+};
+
+const postLogin = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // 2. CONSULTA REAL A MYSQL: Busca un usuario que coincida con el nombre tipeado
-        // Usamos "include" que es el equivalente al INNER JOIN de Sequelize
-        const usuarioEncontrado = await Usuario.findOne({
-            where: { nombre_usuario: username },
-            include: [{ model: Rol, as: 'rol' }] // Se trae los datos del rol asociado
+        // Buscamos el usuario por su nombre_usuario mapeado de la BD
+        const usuarioEncontrado = await Usuario.findOne({ 
+            where: { nombre_usuario: username } 
         });
 
-        console.log('--- DETECTOR DE LOGIN ---');
-        console.log('Datos tipeados en el navegador -> Usuario:', username, '| Contraseña:', password);
-        console.log('Datos reales de la Base de Datos -> Encontrado:', usuarioEncontrado ? 'SÍ' : 'NO', '| Contraseña en BD:', usuarioEncontrado ? usuarioEncontrado.contrasena : 'N/A');
+        // Validación de existencia y contraseña (respetando la columna 'contrasenia')
+        if (!usuarioEncontrado || usuarioEncontrado.contrasenia !== password) {
+            return res.render('login', { 
+                error: 'Usuario o contraseña incorrectos.' 
+            });
+        }
 
-        // 3. VALIDACIÓN DE CREDENCIALES
-        // Verificamos si el usuario existe y si la contraseña coincide con la de la tabla
-        if (usuarioEncontrado && usuarioEncontrado.contrasena === password) {
-            
-            console.log(`Logueado con éxito desde MySQL. Rol: ${usuarioEncontrado.rol.nombre_rol}`);
-            
-            // 4. DIRECCIONAMIENTO SEGÚN EL ROL REAL DE LA BASE DE DATOS
-            switch (usuarioEncontrado.rol.nombre_rol) {
-                case 'Administrador':
-                    return res.redirect('/dashboard/admin');
-                case 'Profesional':
-                    return res.redirect('/medico/dashboard');
-                case 'Paciente':
-                    return res.send('<h1>Portal del Paciente (Próximamente)</h1>');
-                case 'Laboratorio':
-                    return res.send('<h1>Módulo de Laboratorio (Próximamente)</h1>');
-                default:
-                    return res.redirect('/auth/login');
-            }
+        // Verificación de estado del usuario
+        if (usuarioEncontrado.estado !== 'Active') {
+            return res.render('login', { 
+                error: 'El usuario se encuentra inactivo. Contacte al administrador.' 
+            });
+        }
+
+        // 🌟 LA MAGIA DE LA SESIÓN: Guardamos los datos clave del usuario en el navegador
+        req.session.id_usuario = usuarioEncontrado.id_usuario;
+        req.session.nombre_usuario = usuarioEncontrado.nombre_usuario;
+        req.session.id_rol = usuarioEncontrado.id_rol;
+        
+        // Guardamos la FK del profesional médico (si es admin, esto viajará como NULL automáticamente)
+        req.session.id_profesional = usuarioEncontrado.id_profesional; 
+
+        // Enrutamiento dinámico inteligente según el id_rol de tu SQL
+        if (usuarioEncontrado.id_rol === 1) {
+            // Rol: Administrador -> Al panel de gestión de turnos
+            return res.redirect('/dashboard/admin');
+        } else if (usuarioEncontrado.id_rol === 2) {
+            // Rol: Médico -> A su agenda personal
+            return res.redirect('/medico/dashboard');
+        } else if (usuarioEncontrado.id_rol === 3) {
+            // En caso de que configuren el rol 3 (Paciente) a futuro
+            return res.redirect('/paciente/dashboard');
         } else {
-            // Si el usuario no existe o la contraseña está mal
-            return res.render('login', { error: 'Usuario o contraseña incorrectos.' });
+            return res.redirect('/auth/login'); // 👈 Asegurate de que acá también diga /auth/login
         }
 
     } catch (error) {
-        console.error(' Error al validar el login en la base de datos:', error);
-        return res.render('login', { error: 'Ocurrió un error interno en el servidor.' });
+        console.error('Error crítico en el proceso de autenticación:', error);
+        res.render('/auth/login', { 
+            error: 'Ocurrió un error en el servidor al intentar iniciar sesión.' 
+        });
     }
 };
 
-exports.getDashboardAdmin = async (req, res) => {
-    try {
-        // Consultas en tiempo real a MySQL
-        const totalPacientes = await Paciente.count();
-        const totalUsuarios = await Usuario.count({ where: { estado: 'Activo' } });
+// 3. CIERRE DE SESIÓN (GET)
+const getLogout = (req, res) => {
+    req.session.destroy(() => {
+        res.redirect('/auth/login');
+    });
+};
 
-        // Renderizamos la vista pasando las métricas correspondientes
-        res.render('dashboardAdmin', { 
-            totalPacientes, 
-            totalUsuarios,
-            error: undefined 
-        });
-    } catch (error) {
-        console.error(' Error al cargar las métricas del Dashboard:', error);
-        res.render('dashboardAdmin', { 
-            totalPacientes: 0, 
-            totalUsuarios: 0, 
-            error: 'No se pudieron cargar las estadísticas en tiempo real.' 
-        });
-    }
+module.exports = {
+    getLogin,
+    postLogin,
+    getLogout,
+    getDashboardAdmin
 };

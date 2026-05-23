@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const session = require('express-session');
+
 //Config
 const { conectarDB, sequelize } = require('./config/database');
 
@@ -20,16 +22,24 @@ const Turno = require('./models/turnoModel');
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // Configuración del motor de plantillas EJS (La "V" de MVC)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Middlewares necesarios
-app.use(express.urlencoded({ extended: true })); // Para entender los datos enviados por el formulario POST
 app.use(express.static(path.join(__dirname, 'public'))); // Archivos estáticos (CSS, Imágenes)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(session({
+    secret: 'secreto_para_el_tp_hospital', // Cambialo por algo seguro en producción
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+        secure: false, // Poner en true solo si usás HTTPS
+        maxAge: 1000 * 60 * 60 * 2 // 2 horas de duración
+    }
+}));
 
 // Mapeo de Rutas de Autenticación
 
@@ -38,15 +48,22 @@ app.get('/dashboard/admin', authController.getDashboardAdmin);
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
 
+app.get('/auth/logout', authController.getLogout);
+
 app.get('/pacientes/registrar', pacienteController.getRegistroPaciente);
 app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
 
 app.get('/medico/dashboard', medicoController.getDashboard);
 app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
+app.get('/medico/atender/:id', medicoController.getAtenderTurno);
+app.post('/medico/atender', medicoController.postAtenderTurno);
+app.get('/medico/historial/:id_paciente', medicoController.getHistorialPaciente);
 
 app.get('/turnos/asignar', turnoController.getAsignarTurno); 
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/turnos', turnoController.getVerTurnos);
+
+
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {
@@ -57,7 +74,7 @@ const inicializarSistema = async () => {
     await conectarDB();
     try {
         // alter: true le avisa a Sequelize que respete las tablas que hiciste en Workbench sin borrarlas
-        await sequelize.sync({ alter: true });
+        await sequelize.sync({ alter: false });
         console.log('Modelos de Sequelize vinculados con las tablas de MySQL con éxito.');
     } catch (err) {
         console.error('Error al sincronizar modelos con MySQL:', err);

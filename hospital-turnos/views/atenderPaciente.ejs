@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atención Médica - Hospital</title>
+    <link rel="stylesheet" href="/css/styles.css"> <!-- Reutilizá tus estilos -->
+    <style>
+        .atencion-container { max-width: 700px; margin: 30px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .paciente-box { background: #f3f4f6; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 5px solid #2563eb; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { font-weight: bold; margin-bottom: 5px; color: #374151; }
+        .form-group textarea { padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 80px; }
+        .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .btn-save { background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #9ca3af; color: white; padding: 10px 20px; border: none; border-radius: 4px; text-decoration: none; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="atencion-container">
+        <h2>Registro de Atención Médica</h2>
+        
+        <!-- Bloque informativo del paciente que viene desde el controlador -->
+        <div class="paciente-box">
+            <h4>Paciente: <%= turno.paciente.apellido %>, <%= turno.paciente.nombre %></h4>
+            <p><strong>DNI:</strong> <%= turno.paciente.dni %> | <strong>Motivo:</strong> <%= turno.motivo_consulta %></p>
+            <p><strong>Horario del Turno:</strong> <%= turno.hora %> hs</p>
+        </div>
+
+        <!-- Formulario POST que procesa la atención -->
+        <form action="/medico/atender" method="POST">
+            <!-- 🚨 ID oculto del turno para que el controlador sepa cuál cerrar -->
+            <input type="hidden" name="id_turno" value="<%= turno.id_turno %>">
+
+            <div class="form-group">
+                <label for="diagnostico">Diagnóstico / Sintomatología (*):</label>
+                <textarea id="diagnostico" name="diagnostico" required placeholder="Escriba el diagnóstico del paciente..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="tratamiento">Tratamiento / Indicaciones:</label>
+                <textarea id="tratamiento" name="tratamiento" placeholder="Medicamentos, reposo, estudios solicitados, etc."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="observaciones">Observaciones Internas:</label>
+                <textarea id="observaciones" name="observaciones" placeholder="Notas adicionales (no visibles en la receta)..."></textarea>
+            </div>
+
+            <div class="btn-group">
+                <a href="/medico/dashboard" class="btn-cancel">Cancelar</a>
+                <button type="submit" class="btn-save">💾 Finalizar y Guardar</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
