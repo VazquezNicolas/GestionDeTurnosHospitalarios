@@ -1,6 +1,7 @@
 // models/profesionalModel.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const Especialidad = require('./especialidadModel');
 
 const Profesional = sequelize.define('Profesional', {
     id_profesional: {
@@ -30,5 +31,6 @@ const Profesional = sequelize.define('Profesional', {
     tableName: 'profesional',
     timestamps: false // Para que no busque las columnas createdAt/updatedAt
 });
+Profesional.belongsTo(Especialidad, { foreignKey: 'id_especialidad', as: 'especialidad' });
 
 module.exports = Profesional;

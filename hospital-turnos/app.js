@@ -19,6 +19,7 @@ const Rol = require('./models/rolModel');
 const Usuario = require('./models/usuarioModel');
 const Paciente = require('./models/pacienteModel');
 const Turno = require('./models/turnoModel');
+const Especialidad = require('./models/especialidadModel');
 
 const app = express();
 const PORT = 3000;
@@ -53,12 +54,16 @@ app.get('/auth/logout', authController.getLogout);
 
 app.get('/pacientes/registrar', pacienteController.getRegistroPaciente);
 app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
+app.get('/api/pacientes/buscar', pacienteController.buscarApiPorDni);
+app.get('/api/profesionales', medicoController.buscarApiPorEspecialidad);
+app.get('/api/turnos/horarios-disponibles', turnoController.getHorariosDisponiblesApi);
 
 app.get('/medico/dashboard', medicoController.getDashboard);
 app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
 app.get('/medico/atender/:id', medicoController.getAtenderTurno);
 app.post('/medico/atender', medicoController.postAtenderTurno);
 app.get('/medico/historial/:id_paciente', medicoController.getHistorialPaciente);
+
 
 app.get('/turnos/asignar', turnoController.getAsignarTurno); 
 app.post('/turnos/asignar', turnoController.postAsignarTurno);

@@ -23,7 +23,7 @@ const postAgregarMedico = async (req, res) => {
             return res.redirect('/auth/login');
         }
 
-        // 🌟 Recibimos id_especialidad del formulario
+        //  Recibimos id_especialidad del formulario
         const { nombre, apellido, id_especialidad, matricula, username, password } = req.body;
 
         const usuarioExiste = await Usuario.findOne({ where: { nombre_usuario: username } });
@@ -38,7 +38,7 @@ const postAgregarMedico = async (req, res) => {
         const nuevoProfesional = await Profesional.create({
             nombre,
             apellido,
-            id_especialidad, // 👈 Enviamos el ID numérico exacto
+            id_especialidad, 
             matricula
         });
 
@@ -57,7 +57,7 @@ const postAgregarMedico = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error crítico al dar de alta al médico:', error);
+        console.error(' Error crítico al dar de alta al médico:', error);
         res.render('agregarMedico', { 
             error: 'Ocurrió un error interno en la base de datos al guardar el profesional.', 
             success: undefined 

@@ -23,12 +23,12 @@ const getDashboardAdmin = async (req, res) => {
         // 2. Le pasamos ABSOLUTAMENTE TODAS las variables que tu EJS necesita
         res.render('dashboardAdmin', {
             totalPacientes: totalPacientes,
-            totalUsuarios: totalUsuarios, // 🔥 Soluciona el error de image_5f57ea.png
-            totalTurnos: totalTurnos      // 🧠 Nos adelantamos al siguiente bloque del HTML
+            totalUsuarios: totalUsuarios, // Soluciona el error de image_5f57ea.png
+            totalTurnos: totalTurnos      // Nos adelantamos al siguiente bloque del HTML
         });
 
     } catch (error) {
-        console.error('❌ Error al cargar las estadísticas del admin:', error);
+        console.error('Error al cargar las estadísticas del admin:', error);
         // Enviamos valores en 0 para que al menos cargue la interfaz si falla la BD
         res.render('dashboardAdmin', {
             totalPacientes: 0,
@@ -61,7 +61,7 @@ const postLogin = async (req, res) => {
             });
         }
 
-        // 🌟 LA MAGIA DE LA SESIÓN: Guardamos los datos clave del usuario en el navegador
+        // LA MAGIA DE LA SESIÓN: Guardamos los datos clave del usuario en el navegador
         req.session.id_usuario = usuarioEncontrado.id_usuario;
         req.session.nombre_usuario = usuarioEncontrado.nombre_usuario;
         req.session.id_rol = usuarioEncontrado.id_rol;
@@ -80,7 +80,7 @@ const postLogin = async (req, res) => {
             // En caso de que configuren el rol 3 (Paciente) a futuro
             return res.redirect('/paciente/dashboard');
         } else {
-            return res.redirect('/auth/login'); // 👈 Asegurate de que acá también diga /auth/login
+            return res.redirect('/auth/login'); // Asegurate de que acá también diga /auth/login
         }
 
     } catch (error) {

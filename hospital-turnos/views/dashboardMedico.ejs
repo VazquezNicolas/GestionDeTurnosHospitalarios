@@ -19,7 +19,7 @@
         .badge-reserved { background: #fff3cd; color: #856404; }
         .badge-attended { background: #d4edda; color: #155724; }
         
-        /* 🎨 Estilo para el nuevo botón de atención */
+        /*  Estilo para el nuevo botón de atención */
         .btn-atender { 
             display: inline-block; 
             padding: 0.35rem 0.7rem; 
@@ -67,7 +67,7 @@
                     <th>DNI</th>
                     <th>Motivo de Consulta / Especialidad</th>
                     <th>Estado</th>
-                    <th>Acciones</th> <!-- 🌟 1. Nueva Columna -->
+                    <th>Acciones</th> 
                 </tr>
             </thead>
             <tbody>
@@ -97,10 +97,10 @@
                                 </span>
                             </td>
                             <td>
-                                <!-- 🌟 2. Botón de Acción Dinámico -->
+                                <!-- 2. Botón de Acción Dinámico -->
                                 <% if (turno.estado === 'Reservado' || turno.estado === 'Confirmado' || turno.estado === 'Pendiente') { %>
                                     <a href="/medico/atender/<%= turno.id_turno %>" class="btn-atender">
-                                        👨‍⚕️ Atender
+                                        Atender
                                     </a>
                                 <% } else if (turno.estado === 'Atendido') { %>
                                     <span class="text-muted">Ya atendido</span>
@@ -112,9 +112,9 @@
     <% if (turno.paciente) { %>
         <strong><%= turno.paciente.apellido %>, <%= turno.paciente.nombre %></strong>
         <br>
-        <!-- 🌟 Enlace flotante para consultar historial -->
+        <!--  Enlace flotante para consultar historial -->
         <a href="/medico/historial/<%= turno.paciente.id_paciente %>" style="font-size: 0.8rem; color: #1992d4; text-decoration: none;">
-            🔍 Ver Historial Clínico
+            Ver Historial Clínico
         </a>
     <% } else { %>
         <span style="color: red;">Paciente no vinculado</span>
@@ -127,7 +127,7 @@
         </table>
 
         <p style="margin-top: 2rem; font-size: 0.9rem;">
-            <!-- 🌟 3. Ruta unificada de cierre de sesión -->
+            <!--  3. Ruta unificada de cierre de sesión -->
             <a href="/auth/logout" style="color: #dc3545; text-decoration: none; font-weight: bold;">← Cerrar Sesión Seguro</a>
         </p>
     </div>

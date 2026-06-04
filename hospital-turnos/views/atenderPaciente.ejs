@@ -29,7 +29,7 @@
 
         <!-- Formulario POST que procesa la atención -->
         <form action="/medico/atender" method="POST">
-            <!-- 🚨 ID oculto del turno para que el controlador sepa cuál cerrar -->
+            <!--  ID oculto del turno para que el controlador sepa cuál cerrar -->
             <input type="hidden" name="id_turno" value="<%= turno.id_turno %>">
 
             <div class="form-group">
@@ -49,7 +49,7 @@
 
             <div class="btn-group">
                 <a href="/medico/dashboard" class="btn-cancel">Cancelar</a>
-                <button type="submit" class="btn-save">💾 Finalizar y Guardar</button>
+                <button type="submit" class="btn-save">Finalizar y Guardar</button>
             </div>
         </form>
     </div>

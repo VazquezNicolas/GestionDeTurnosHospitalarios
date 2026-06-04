@@ -3,7 +3,7 @@ const Paciente = require('../models/pacienteModel');
 
 // 1. Vista: Mostrar el formulario de registro (Queda igual)
 exports.getRegistroPaciente = (req, res) => {
-    res.render('registrarPaciente', { error: undefined, exito: undefined }); // 👈 Cambiado a 'registrarPaciente'
+    res.render('registrarPaciente', { error: undefined, exito: undefined }); // Cambiado a 'registrarPaciente'
 };
 
 // 2. Acción: Procesar el formulario (POST) - Ahora es ASÍNCRONA
@@ -45,5 +45,28 @@ exports.postRegistroPaciente = async (req, res) => {
             error: 'Ocurrió un error interno al intentar guardar el paciente.', 
             exito: undefined 
         });
+    }
+};
+
+exports.buscarApiPorDni = async (req, res) => {
+    const { dni } = req.query; // Capturamos el DNI enviado desde el fetch (?dni=...)
+
+    try {
+        if (!dni) {
+            return res.status(400).json({ error: 'El DNI es requerido para realizar la búsqueda.' });
+        }
+
+        const paciente = await Paciente.findOne({ where: { dni } });
+
+        if (!paciente) {
+            return res.status(404).json({ error: 'No se encontró ningún paciente con el DNI ingresado.' });
+        }
+
+        // Si lo encuentra, enviamos el objeto del paciente completo al frontend en formato JSON
+        return res.json(paciente);
+
+    } catch (error) {
+        console.error('Error en la API interna de búsqueda de paciente:', error);
+        return res.status(500).json({ error: 'Ocurrió un error interno en el servidor.' });
     }
 };

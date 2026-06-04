@@ -3,6 +3,8 @@ const Profesional = require('../models/profesionalModel');
 const Paciente = require('../models/pacienteModel');
 const Atencion = require('../models/atencionModel');
 
+const Disponibilidad = require('../models/disponibilidadModel');
+
 // 1. Vista del Dashboard (Conectada a la sesión del médico)
 const getDashboard = async (req, res) => {
     try {
@@ -10,9 +12,9 @@ const getDashboard = async (req, res) => {
         console.log('ID Rol en sesión:', req.session ? req.session.id_rol : 'No hay sesión');
         console.log('ID Profesional en sesión:', req.session ? req.session.id_profesional : 'No hay sesión');
 
-        // 🚨 CONTROL DE ACCESO: Si no hay sesión o no es médico, directo a tu ruta oficial
+        //  CONTROL DE ACCESO: Si no hay sesión o no es médico, directo a tu ruta oficial
         if (!req.session || !req.session.id_profesional) {
-        console.log('⚠️ Acceso denegado: id_profesional ausente. Rebotando a /auth/login...');
+        console.log(' Acceso denegado: id_profesional ausente. Rebotando a /auth/login...');
         return res.redirect('/auth/login'); 
         }
 
@@ -25,7 +27,7 @@ const getDashboard = async (req, res) => {
             order: [['fecha', 'ASC'], ['hora', 'ASC']] 
         });
 
-        // 🌟 CORREGIDO: Apunta directo a views/dashboardMedico.ejs sin barras raras
+        // CORREGIDO: Apunta directo a views/dashboardMedico.ejs sin barras raras
         res.render('dashboardMedico', {
             turnosPendientes: turnosDelMedico.length,
             turnos: turnosDelMedico, 
@@ -33,8 +35,8 @@ const getDashboard = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error al cargar la agenda del médico:', error);
-        // 🌟 CORREGIDO AQUÍ TAMBIÉN:
+        console.error(' Error al cargar la agenda del médico:', error);
+        //  CORREGIDO AQUÍ TAMBIÉN:
         res.render('dashboardMedico', {
             turnosPendientes: 0,
             turnos: [],
@@ -65,7 +67,7 @@ const getAtenderTurno = async (req, res) => {
         res.render('atenderPaciente', { turno });
 
     } catch (error) {
-        console.error('❌ Error al cargar formulario de atención:', error);
+        console.error('Error al cargar formulario de atención:', error);
         res.redirect('/medico/dashboard');
     }
 };
@@ -78,7 +80,7 @@ const postAtenderTurno = async (req, res) => {
         console.log('Sesión actual en el POST:', req.session);
         console.log('ID Profesional en el POST:', req.session ? req.session.id_profesional : 'No existe');
         if (!req.session || !req.session.id_profesional) {
-            console.log('⚠️ Rebotado del POST: No se encontró id_profesional en la sesión.');
+            console.log('Rebotado del POST: No se encontró id_profesional en la sesión.');
             return res.redirect('/auth/login');
         }
 
@@ -101,7 +103,7 @@ const postAtenderTurno = async (req, res) => {
         res.redirect('/medico/dashboard');
 
     } catch (error) {
-        console.error('❌ Error al guardar la atención médica:', error);
+        console.error('Error al guardar la atención médica:', error);
         res.status(500).send('Error interno del servidor al registrar la atención.');
     }
 };
@@ -130,7 +132,7 @@ const getHistorialPaciente = async (req, res) => {
         const paciente = await Paciente.findByPk(idPaciente);
 
         if (!paciente) {
-            console.log('⚠️ Paciente no encontrado para el historial');
+            console.log('Paciente no encontrado para el historial');
             return res.redirect('/medico/dashboard');
         }
 
@@ -157,8 +159,32 @@ const getHistorialPaciente = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error al obtener el historial médico:', error);
+        console.error('Error al obtener el historial médico:', error);
         res.redirect('/medico/dashboard');
+    }
+};
+
+// Endpoint API: Filtrar médicos por el ID de especialidad recibido por Query String (?id_especialidad=...)
+const buscarApiPorEspecialidad = async (req, res) => {
+    const { id_especialidad } = req.query;
+
+    try {
+        if (!id_especialidad) {
+            return res.status(400).json({ error: 'El parámetro id_especialidad es requerido.' });
+        }
+
+        // Buscamos en la base de datos relacional todos los profesionales de esa especialidad
+        const medicos = await Profesional.findAll({
+            where: { id_especialidad: parseInt(id_especialidad, 10) },
+            order: [['apellido', 'ASC']] // Los ordenamos alfabéticamente para que queden prolijos
+        });
+
+        // Respondemos con la lista en formato JSON pura para el fetch del frontend
+        return res.json(medicos);
+
+    } catch (error) {
+        console.error('Error en la API al filtrar médicos por especialidad:', error);
+        return res.status(500).json({ error: 'Ocurrió un error interno en el servidor.' });
     }
 };
 
@@ -167,5 +193,6 @@ module.exports = {
     postGuardarDisponibilidad,
     getAtenderTurno,
     postAtenderTurno,
-    getHistorialPaciente
+    getHistorialPaciente,
+    buscarApiPorEspecialidad
 };

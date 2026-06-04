@@ -21,43 +21,51 @@
         <form action="/turnos/asignar" method="POST">
             
             <!-- Desplegable dinámico de Pacientes -->
-            <div class="form-group">
-                <label for="pacienteId">Seleccionar Paciente:</label>
-                <select name="pacienteId" id="pacienteId" required>
-                    <option value="">Seleccione un paciente registrado...</option>
-                    <% pacientes.forEach(paciente => { %>
-                        <option value="<%= paciente.id_paciente || paciente.id %>">
-                            <%= paciente.apellido %>, <%= paciente.nombre %> (DNI: <%= paciente.dni %>)
-                        </option>
-                    <% }); %>
-                </select>
-            </div>
+<div class="form-group">
+    <label for="buscar-dni">Buscar Paciente por DNI:</label>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="buscar-dni" class="form-control" placeholder="Ej: 46123456">
+        <button type="button" id="btn-buscar-paciente" class="btn btn-primary">Buscar</button>
+    </div>
+    <div id="paciente-seleccionado-info" style="margin-top: 10px; font-weight: bold; color: #2b7a78;"></div>
+    
+    <input type="hidden" name="id_paciente" id="id_paciente_hidden">
+</div>
+<!-- CACA -->
+<button type="button" id="btn-buscar-paciente" class="btn btn-primary">Buscar</button>
+<!-- CACA -->
+<!-- Desplegable dinámico de Médicos (¡Corregido!) -->
+<div class="form-group">
+    <label for="especialidadId">Seleccionar Especialidad:</label>
+    <select id="especialidadId" name="especialidadId" required disabled>
+        <option value="" disabled selected>Primero busque un paciente...</option>
+        <% if (typeof especialidades !== 'undefined') { %>
+            <% especialidades.forEach(esp => { %>
+                <option value="<%= esp.id_especialidad %>"><%= esp.nombre %></option>
+            <% }); %>
+        <% } %>
+    </select>
+</div>
 
-            <!-- Desplegable dinámico de Médicos (¡Corregido!) -->
-            <div class="form-group">
-                <label for="medicoId">Seleccionar Profesional Médico:</label>
-                <select id="medicoId" name="medicoId" required>
-                    <option value="" disabled selected>Seleccione un médico disponible...</option>
-                    <% medicos.forEach(medico => { %>
-                        <option value="<%= medico.id_profesional || medico.id %>">
-                            Dr/Dra. <%= medico.apellido %>, <%= medico.nombre %> (Mat: <%= medico.matricula %>)
-                        </option>
-                    <% }); %>
-                </select>
-            </div>
-
+<div class="form-group">
+    <label for="medicoId">Seleccionar Profesional Médico:</label>
+    <select id="medicoId" name="medicoId" required disabled>
+        <option value="" disabled selected>Seleccione una especialidad primero...</option>
+    </select>
+</div>
             <!-- Fecha y Hora en paralelo -->
-            <div style="display: flex; gap: 1rem;">
-                <div class="form-group" style="flex: 1;">
-                    <label for="fecha">Fecha del Turno:</label>
-                    <input type="date" id="fecha" name="fecha" required>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label for="hora">Horario:</label>
-                    <input type="time" id="hora" name="hora" required>
-                </div>
-            </div>
-
+<div style="display: flex; gap: 1rem;">
+    <div class="form-group" style="flex: 1;">
+        <label for="fecha">Fecha del Turno:</label>
+        <input type="date" id="fecha" name="fecha" required disabled>
+    </div>
+    <div class="form-group" style="flex: 1;">
+        <label for="hora">Horario Disponible:</label>
+        <select id="hora" name="hora" required disabled>
+            <option value="" disabled selected>Seleccione fecha y médico...</option>
+        </select>
+    </div>
+</div>
             <!-- Motivo clínico -->
             <div class="form-group">
                 <label for="motivo">Motivo de la Consulta / Especialidad:</label>
@@ -73,3 +81,112 @@
     </div>
 </body>
 </html>
+
+<script>
+    // Elementos del DOM
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
+    const dd = String(hoy.getDate()).padStart(2, '0');
+
+    const fechaMinima = `${yyyy}-${mm}-${dd}`;
+
+    document.getElementById('fecha').setAttribute('min', fechaMinima);
+
+    const btnBuscar = document.getElementById('btn-buscar-paciente');
+    const inputDni = document.getElementById('buscar-dni');
+    const infoPaciente = document.getElementById('paciente-seleccionado-info');
+    const hiddenPacienteId = document.getElementById('id_paciente_hidden');
+
+    const selectEspecialidad = document.getElementById('especialidadId');
+    const selectMedico = document.getElementById('medicoId');
+    const inputFecha = document.getElementById('fecha');
+    const selectHora = document.getElementById('hora');
+
+    // --- PASO 1: BÚSQUEDA DEL PACIENTE POR DNI ---
+    btnBuscar.addEventListener('click', async () => {
+        const dni = inputDni.value.trim();
+        if (!dni) return alert('Ingrese un DNI');
+
+        try {
+            const response = await fetch(`/api/pacientes/buscar?dni=${dni}`);
+            if (!response.ok) {
+                infoPaciente.textContent = "❌ Paciente no encontrado.";
+                infoPaciente.style.color = "red";
+                hiddenPacienteId.value = "";
+                desactivarPasosPosteriores();
+                return;
+            }
+            const paciente = await response.json();
+            infoPaciente.textContent = `✅ Paciente: ${paciente.apellido}, ${paciente.nombre}`;
+            infoPaciente.style.color = "#2b7a78";
+            hiddenPacienteId.value = paciente.id_paciente;
+
+            // Habilitamos el siguiente paso lógico
+            selectEspecialidad.disabled = false;
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // --- PASO 2: FILTRAR MÉDICOS POR ESPECIALIDAD ---
+    selectEspecialidad.addEventListener('change', async () => {
+        const idEsp = selectEspecialidad.value;
+        selectMedico.innerHTML = '<option value="" disabled selected>Cargando médicos...</option>';
+        selectMedico.disabled = false;
+
+        try {
+            const response = await fetch(`/api/profesionales?id_especialidad=${idEsp}`);
+            const medicos = await response.json();
+
+            selectMedico.innerHTML = '<option value="" disabled selected>Seleccione un médico...</option>';
+            medicos.forEach(med => {
+                selectMedico.innerHTML += `<option value="${med.id_profesional}">Dr/Dra. ${med.apellido}, ${med.nombre}</option>`;
+            });
+            selectMedico.disabled = false;
+            inputFecha.disabled = false;
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // --- PASO 3: CONSULTAR HORARIOS DISPONIBLES (REGLA 15 MINUTOS) ---
+    async function cargarHorariosDisponibles() {
+        const idProf = selectMedico.value;
+        const fecha = inputFecha.value;
+
+        // Solo consultamos si ambos campos están llenos
+        if (!idProf || !fecha) return;
+
+        selectHora.innerHTML = '<option value="" disabled selected>Calculando agendas...</option>';
+        selectHora.disabled = true;
+
+        try {
+            const response = await fetch(`/api/turnos/horarios-disponibles?id_profesional=${idProf}&fecha=${fecha}`);
+            const horarios = await response.json();
+
+            if (horarios.length === 0) {
+                selectHora.innerHTML = '<option value="" disabled selected>Sin turnos disponibles este día</option>';
+                return;
+            }
+
+            selectHora.innerHTML = '<option value="" disabled selected>Seleccione el horario...</option>';
+            horarios.forEach(h => {
+                selectHora.innerHTML += `<option value="${h}">${h.substring(0,5)} hs</option>`;
+            });
+            selectHora.disabled = false;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    selectMedico.addEventListener('change', cargarHorariosDisponibles);
+    inputFecha.addEventListener('change', cargarHorariosDisponibles);
+
+    function desactivarPasosPosteriores() {
+        selectEspecialidad.disabled = true;
+        selectMedico.disabled = true;
+        inputFecha.disabled = true;
+        selectHora.disabled = true;
+    }
+</script>

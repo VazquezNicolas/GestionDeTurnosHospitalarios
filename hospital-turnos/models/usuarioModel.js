@@ -28,7 +28,7 @@ const Usuario = sequelize.define('Usuario', {
     },
     estado: {
         type: DataTypes.STRING(20),
-        defaultValue: 'Activo'
+        defaultValue: 'Active'
     }
 }, {
     tableName: 'usuario',
