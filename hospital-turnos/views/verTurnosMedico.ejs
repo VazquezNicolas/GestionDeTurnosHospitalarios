@@ -31,17 +31,17 @@
             <form action="/admin/turnos/reprogramar" method="GET" style="display: flex; gap: 1rem; align-items: flex-end;">
                 <div class="form-group" style="flex: 2; margin-bottom: 0;">
                     <label for="id_profesional">Seleccionar Profesional Médico:</label>
-<select id="id_profesional" name="id_profesional" required>
-    <option value="" disabled selected>Seleccione un médico...</option>
-    
-    <% if (typeof medicos !== 'undefined' && medicos && medicos.length > 0) { %>
-        <% medicos.forEach(med => { %>
-            <option value="<%= med.id_profesional %>" <%= id_profesional_seleccionado == med.id_profesional ? 'selected' : '' %>>
-                Dr/Dra. <%= med.apellido %>, <%= med.nombre %> (Mat: <%= med.matricula %>)
-            </option>
-        <% }); %>
-    <% } %>
-</select>
+                    <select id="id_profesional" name="id_profesional" required>
+                        <option value="" disabled selected>Seleccione un médico...</option>
+                        
+                        <% if (typeof medicos !== 'undefined' && medicos && medicos.length > 0) { %>
+                            <% medicos.forEach(med => { %>
+                                <option value="<%= med.id_profesional %>" <%= id_profesional_seleccionado == med.id_profesional ? 'selected' : '' %>>
+                                    Dr/Dra. <%= med.apellido %>, <%= med.nombre %> (Mat: <%= med.matricula %>)
+                                </option>
+                            <% }); %>
+                        <% } %>
+                    </select>
                 </div>
                 <button type="submit" class="btn-submit" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem;">🔍 Ver Agenda</button>
             </form>
@@ -73,8 +73,23 @@
                             <td><%= turno.paciente ? (turno.paciente.apellido + ', ' + turno.paciente.nombre + ' (' + turno.paciente.dni + ')') : 'No vinculado' %></td>
                             <td><%= turno.motivo_consulta %></td>
                             <td><span class="badge" style="background: #fff3cd; color: #856404; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;"><%= turno.estado %></span></td>
+                            
+                            <!-- COLUMNA DE ACCIÓN CORREGIDA -->
                             <td>
-                                <button type="button" class="btn-reprogramar" onclick="toggleReprogramar('<%= turno.id_turno %>')">🔄 Reprogramar</button>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <button type="button" class="btn-reprogramar" onclick="toggleReprogramar('<%= turno.id_turno %>')">🔄 Reprogramar</button>
+
+                                    <!-- Formulario correctamente anidado usando 'turno.id_turno' -->
+                                    <form action="/admin/turnos/cancelar" method="POST" onsubmit="return confirm('¿Está seguro de que desea CANCELAR este turno médico definitivamente? El espacio se liberará en la agenda.');" style="margin: 0;">
+                                        <input type="hidden" name="id_turno" value="<%= turno.id_turno %>">
+                                        <input type="hidden" name="origen" value="reprogramacion">
+                                        <input type="hidden" name="id_medico" value="<%= id_profesional_seleccionado %>"> 
+                                        
+                                        <button type="submit" class="btn-cancelar" style="background: #ef4444; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">
+                                            ❌ Cancelar Cita
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         

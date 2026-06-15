@@ -11,11 +11,15 @@
         .paciente-card { border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 1.5rem; background: #fff; overflow: hidden; }
         .paciente-header { background: #334e68; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
         .paciente-body { padding: 1.25rem; background: #f8fafc; }
-        .historia-clinica-box { background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-top: 1rem; }
+        .inner-box { background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-top: 1rem; }
         .evolucion-item { border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem; background: #fdfdfd; padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid #10b981; }
-        .btn-toggle { background: #1992d4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-toggle { background: #1992d4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 0.5rem; }
         .btn-toggle:hover { background: #1471a4; }
-        .alert-danger { background: #fde8e8; color: #9b1c1c; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; border-left: 4px solid #e11d48; }
+        .btn-cancelar { background: #ef4444; color: white; border: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .btn-cancelar:hover { background: #dc2626; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        th, td { padding: 0.65rem; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 0.9rem; }
+        th { background: #475569; color: white; }
     </style>
 </head>
 <body>
@@ -24,7 +28,7 @@
         <p style="color: #64748b; margin-top: -0.5rem;">Módulo interno de supervisión clínica. Buscá pacientes por DNI para auditar sus datos y consultar su historial.</p>
 
         <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-danger"><%= error %></div>
+            <div class="alert alert-danger" style="background: #fde8e8; color: #9b1c1c; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;"><%= error %></div>
         <% } %>
 
         <div class="search-box">
@@ -53,24 +57,120 @@
                                 <strong style="font-size: 1.1rem;"><%= paciente.apellido %>, <%= paciente.nombre %></strong>
                                 <span style="margin-left: 1rem; opacity: 0.85;">| DNI: <%= paciente.dni %></span>
                             </div>
-                            <button type="button" class="btn-toggle" onclick="toggleHistoria('<%= paciente.id_paciente %>')">🩺 Ver Historia Clínica</button>
+<div>
+    <button type="button" class="btn-toggle" style="background: #f59e0b;" onclick="toggleElement('editar-<%= paciente.id_paciente %>')">✏️ Editar Datos</button>
+    <button type="button" class="btn-toggle" style="background: #0ea5e9;" onclick="toggleElement('turnos-<%= paciente.id_paciente %>')">📅 Ver Turnos Activos</button>
+    <button type="button" class="btn-toggle" style="background: #10b981;" onclick="toggleElement('hc-<%= paciente.id_paciente %>')">🩺 Historia Clínica</button>
+</div>
                         </div>
                         
                         <div class="paciente-body">
                             <p style="margin: 0 0 0.5rem 0;"><strong>Correo Electrónico:</strong> <%= paciente.email || 'No registrado' %></p>
                             <p style="margin: 0;"><strong>Teléfono de Contacto:</strong> <%= paciente.telefono || 'No registrado' %></p>
-                            
-                            <div id="hc-<%= paciente.id_paciente %>" class="historia-clinica-box" style="display: none;">
-                                <h4 style="color: #334e68; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Evoluciones Clínicas Registradas</h4>
-                                
+                            <div id="editar-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #f59e0b; background: #fffbeb;">
+    <h4 style="color: #d97706; margin-top: 0; border-bottom: 1px solid #fcd34d; padding-bottom: 0.35rem;">Actualizar Ficha del Paciente</h4>
+    
+    <form action="/admin/pacientes/editar" method="POST" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+        <input type="hidden" name="id_paciente" value="<%= paciente.id_paciente %>">
+        <input type="hidden" name="dni_busqueda" value="<%= dni_busqueda %>">
+        
+        <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Nombre:</label>
+            <input type="text" name="nombre" value="<%= paciente.nombre %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+        </div>
+        
+        <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Apellido:</label>
+            <input type="text" name="apellido" value="<%= paciente.apellido %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+        </div>
+        
+        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">DNI:</label>
+            <input type="text" name="dni" value="<%= paciente.dni %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+        </div>
+        
+        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Correo Electrónico:</label>
+            <input type="email" name="email" value="<%= paciente.email %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+        </div>
+        
+        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Teléfono:</label>
+            <input type="text" name="telefono" value="<%= paciente.telefono %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+        </div>
+        
+        <div style="width: 100%; text-align: right; margin-top: 0.5rem;">
+            <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 Guardar Cambios</button>
+        </div>
+    </form>
+</div>
+                            <div id="turnos-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #0ea5e9;">
+                                <h4 style="color: #0284c7; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Turnos Médicos Vigentes</h4>
                                 <% 
-                                    // Filtramos las atenciones reales mapeando con el alias físico 'registro_atencion'
+                                    // 1. Instanciamos el tiempo actual del servidor para comparar con precisión
+                                    const ahora = new Date();
+                                    const fechaHoyStr = ahora.toISOString().split('T')[0]; 
+                                    const horaAhoraStr = ahora.toTimeString().split(' ')[0]; 
+
+                                    let turnosReservados = [];
+                                    if (paciente.turnos) {
+                                        // 2. Filtramos únicamente los turnos reservados que pertenezcan al futuro
+                                        turnosReservados = paciente.turnos.filter(t => {
+                                            if (t.estado !== 'Reservado') return false;
+                                            
+                                            // Si el año/mes/día es mayor, está perfecto
+                                            if (t.fecha > fechaHoyStr) return true;
+                                            
+                                            // Si es hoy, controlamos minuciosamente que la hora del turno todavía no haya pasado
+                                            if (t.fecha === fechaHoyStr) {
+                                                return t.hora > horaAhoraStr;
+                                            }
+                                            
+                                            return false;
+                                        });
+                                    }
+                                %>
+                                <% if (turnosReservados.length === 0) { %>
+                                    <p style="color: #64748b; font-style: italic; margin: 0;">El paciente no tiene turnos pendientes de atención futuros.</p>
+                                <% } else { %>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Hora</th>
+                                                <th>Médico Profesional</th>
+                                                <th>Motivo</th>
+                                                <th style="text-align: center;">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% turnosReservados.forEach(t => { %>
+                                                <tr>
+                                                    <td><strong><%= t.fecha %></strong></td>
+                                                    <td><%= t.hora.substring(0, 5) %> hs</td>
+                                                    <td>Dr/Dra. <%= t.profesional ? (t.profesional.apellido + ', ' + t.profesional.nombre) : 'No especificado' %></td>
+                                                    <td><%= t.motivo_consulta || 'Consulta de rutina' %></td>
+                                                    <td style="text-align: center;">
+                                                        <form action="/admin/turnos/cancelar" method="POST" onsubmit="return confirm('¿Está seguro de que desea CANCELAR este turno médico? El espacio quedará liberado inmediatamente.');">
+                                                            <input type="hidden" name="id_turno" value="<%= t.id_turno %>">
+                                                            <input type="hidden" name="dni_busqueda" value="<%= dni_busqueda %>">
+                                                            <button type="submit" class="btn-cancelar">❌ Cancelar Cita</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                <% } %>
+                            </div>
+
+                            <div id="hc-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #10b981;">
+                                <h4 style="color: #15803d; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Evoluciones Clínicas Registradas</h4>
+                                <% 
                                     let atencionesReales = [];
                                     if (paciente.turnos) {
                                         paciente.turnos.forEach(t => {
-                                            // 👇 CORREGIDO: Mapeo exacto con tu alias de app.js y tu tabla MySQL
                                             const evol = t.registro_atencion; 
-                                            
                                             if (evol) {
                                                 atencionesReales.push({
                                                     fecha: evol.fecha_atencion,
@@ -83,11 +183,8 @@
                                             }
                                         });
                                     }
-                                    
-                                    // Ordenamos las consultas cronológicamente de la más nueva a la más vieja
                                     atencionesReales.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                                 %>
-
                                 <% if (atencionesReales.length === 0) { %>
                                     <p style="color: #64748b; font-style: italic; margin: 0;">El paciente no registra consultas médicas cerradas ni evoluciones históricas en el sistema.</p>
                                 <% } else { %>
@@ -123,9 +220,9 @@
     </div>
 
     <script>
-        // Muestra u oculta el cajón de la historia clínica
-        function toggleHistoria(idPaciente) {
-            const contenedor = document.getElementById(`hc-${idPaciente}`);
+        // Función unificada para mostrar/ocultar los bloques dinámicos
+        function toggleElement(idElemento) {
+            const contenedor = document.getElementById(idElemento);
             contenedor.style.display = contenedor.style.display === 'none' ? 'block' : 'none';
         }
     </script>

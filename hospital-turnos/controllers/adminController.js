@@ -227,6 +227,77 @@ const getGestionPacientes = async (req, res) => {
     }
 };
 
+const postCancelarTurnoAdmin = async (req, res) => {
+    // Agregamos 'origen' e 'id_medico' para saber a dónde redirigir
+    const { id_turno, dni_busqueda, origen, id_medico } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        if (!id_turno) {
+            return res.redirect('/dashboard/admin');
+        }
+
+        // Ejecutamos la cancelación lógica en la base de datos
+        await Turno.update(
+            { estado: 'Cancelado' },
+            { 
+                where: { id_turno: parseInt(id_turno, 10) } 
+            }
+        );
+
+        // CONTROL DE REDIRECCIÓN SEGÚN EL ORIGEN
+        if (origen === 'reprogramacion' && id_medico) {
+            // Si venía de reprogramación, vuelve al listado de ese médico
+            return res.redirect(`/admin/turnos/reprogramar?id_medico=${id_medico}`);
+        }
+
+        if (dni_busqueda) {
+            // Si venía de la ficha del paciente, mantiene el filtro por DNI
+            return res.redirect(`/admin/pacientes/gestion?dni_busqueda=${dni_busqueda}`);
+        }
+        
+        return res.redirect('/admin/pacientes/gestion');
+
+    } catch (error) {
+        console.error('Error crítico al cancelar turno:', error);
+        return res.redirect('/dashboard/admin');
+    }
+};
+
+// Acción: Editar los datos filiatorios de un paciente (POST)
+const postEditarPacienteAdmin = async (req, res) => {
+    const { id_paciente, nombre, apellido, dni, email, telefono, dni_busqueda } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        if (!id_paciente) {
+            return res.redirect('/admin/pacientes/gestion');
+        }
+
+        // Actualizamos de forma segura excluyendo intencionalmente campos médicos
+        await Paciente.update(
+            { nombre, apellido, dni, email, telefono },
+            { where: { id_paciente: parseInt(id_paciente, 10) } }
+        );
+
+        // Si había una búsqueda activa, recargamos manteniendo el filtro
+        if (dni_busqueda) {
+            return res.redirect(`/admin/pacientes/gestion?dni_busqueda=${dni_busqueda}`);
+        }
+        
+        return res.redirect('/admin/pacientes/gestion');
+
+    } catch (error) {
+        console.error('Error crítico al editar datos del paciente:', error);
+        return res.redirect('/admin/pacientes/gestion');
+    }
+};
 //Turno.hasOne(Atencion, { as: 'atencion', foreignKey: 'id_turno' });
 //Atencion.belongsTo(Turno, { as: 'turno', foreignKey: 'id_turno' });
 
@@ -235,5 +306,7 @@ module.exports = {
     postAgregarMedico,
     getReprogramarTurnos,       
     postGuardarReprogramacion,
-    getGestionPacientes
+    getGestionPacientes,
+    postCancelarTurnoAdmin,
+    postEditarPacienteAdmin
 };

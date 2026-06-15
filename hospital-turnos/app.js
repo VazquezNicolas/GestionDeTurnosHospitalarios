@@ -89,7 +89,9 @@ app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
 // Rutas exclusivas del Administrador para la reprogramación de turnos
 app.get('/admin/turnos/reprogramar', adminController.getReprogramarTurnos);
 app.post('/admin/turnos/reprogramar/guardar', adminController.postGuardarReprogramacion);
+app.post('/admin/turnos/cancelar', adminController.postCancelarTurnoAdmin);
 app.get('/admin/pacientes/gestion', adminController.getGestionPacientes);
+app.post('/admin/pacientes/editar', adminController.postEditarPacienteAdmin);
 // Redirección por defecto al login
 app.get('/', (req, res) => {
     res.redirect('/auth/login');
