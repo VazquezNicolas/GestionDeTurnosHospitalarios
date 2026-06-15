@@ -25,60 +25,59 @@ const getAsignarTurno = async (req, res) => {
 };
 
 // 2. GUARDAR EL TURNO (POST)
+// Acción: Procesar la asignación de un nuevo turno (POST)
 const postAsignarTurno = async (req, res) => {
-    // CORREGIDO: Extraemos 'id_paciente' que inyecta tu script de frontend
-    const { id_paciente, medicoId, fecha, hora, motivo } = req.body;
-
-    const ahora = new Date();
-    const fechaHoyStr = ahora.toISOString().split('T')[0];
-    const horaActualStr = ahora.toTimeString().substring(0, 8);
-
-    if (fecha < fechaHoyStr || (fecha === fechaHoyStr && hora < horaActualStr)) {
-        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-        return res.render('asignarTurno', {
-            especialidades,
-            error: 'No se pueden agendar turnos para fechas u horarios que ya pasaron.',
-            exito: undefined
-        });
-    }
+    const { id_paciente, id_profesional, fecha, hora, motivo_consulta } = req.body;
 
     try {
-        const idPacienteClean = parseInt(id_paciente, 10);
-        const idMedicoClean = parseInt(medicoId, 10);
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
 
-        if (!idPacienteClean || !idMedicoClean) {
-            throw new Error('Debe seleccionar un paciente y un médico válidos.');
+        // 1. Validación de datos vacíos
+        if (!id_paciente || !id_profesional || !fecha || !hora) {
+            return res.redirect('/turnos/asignar?error=Por+favor,+complete+todos+los+campos+obligatorios.');
         }
 
-        // INSERT EN MYSQL
+        // 2. REGLA DE NEGOCIO: Validar que la fecha y hora no sean del pasado (Backend Check)
+        const hoyStr = new Date().toISOString().split('T')[0];
+        const ahoraStr = new Date().toTimeString().split(' ')[0];
+        
+        if (fecha < hoyStr) {
+            return res.redirect('/turnos/asignar?error=Operación+denegada:+No+se+pueden+asignar+turnos+en+fechas+pasadas.');
+        }
+        if (fecha === hoyStr && hora < ahoraStr) {
+            return res.redirect('/turnos/asignar?error=Operación+denegada:+Ese+horario+ya+ha+transcurrido+en+el+día+de+hoy.');
+        }
+
+        // 3. REGLA DE NEGOCIO (RF-12): Prevenir superposición de turnos
+        const turnoExistente = await Turno.findOne({
+            where: { 
+                id_profesional: parseInt(id_profesional, 10), 
+                fecha: fecha, 
+                hora: hora,
+                estado: 'Reservado' // Solo nos importa si el turno activo choca
+            }
+        });
+
+        if (turnoExistente) {
+            return res.redirect('/turnos/asignar?error=El+horario+seleccionado+acaba+de+ser+reservado+por+otro+operador.+Por+favor,+elija+otro.');
+        }
+
+        // 4. Inserción segura del turno en la base de datos
         await Turno.create({
-            id_paciente: idPacienteClean,
-            id_profesional: idMedicoClean,
-            id_consultorio: 1, // Recordá tener el consultorio con ID 1 creado en Workbench
+            id_paciente: parseInt(id_paciente, 10),
+            id_profesional: parseInt(id_profesional, 10),
             fecha: fecha,
             hora: hora,
-            motivo_consulta: motivo, 
-            estado: 'Reservado'       
+            motivo_consulta: motivo_consulta ? motivo_consulta.trim() : 'Consulta general',
+            estado: 'Reservado'
+            // id_consultorio ya no es necesario aquí
         });
 
-        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-
-        res.render('asignarTurno', {
-            especialidades,
-            error: undefined,
-            exito: '¡Turno asignado y guardado físicamente en la base de datos con persistencia real!'
-        });
+        return res.redirect('/turnos/asignar?exito=El+turno+ha+sido+asignado+y+reservado+correctamente.');
 
     } catch (error) {
-        console.error('Error al insertar el turno en la BD:', error);
-        
-        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-        
-        res.render('asignarTurno', {
-            especialidades,
-            error: 'Ocurrió un error interno: Verifique las restricciones de claves foráneas en su SQL.',
-            exito: undefined
-        });
+        console.error('Error crítico al asignar turno:', error);
+        return res.redirect('/turnos/asignar?error=Ocurrió+un+error+interno+al+intentar+registrar+el+turno.');
     }
 };
 

@@ -26,6 +26,14 @@ const Profesional = sequelize.define('Profesional', {
         type: DataTypes.INTEGER,
         allowNull: false,
         field: 'id_especialidad' 
+    },
+    telefono: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+    },
+    email: {
+        type: DataTypes.STRING(100),
+        allowNull: true
     }
 }, {
     tableName: 'profesional',

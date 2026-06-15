@@ -82,6 +82,9 @@ app.get('/turnos/asignar', turnoController.getAsignarTurno);
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/turnos', turnoController.getVerTurnos);
 
+//app.post('/admin/turnos/asignar', adminController.postAsignarTurno);
+//app.get('/admin/turnos/asignar', adminController.getAsignarTurno);
+
 // Rutas exclusivas del Administrador para la reprogramación de turnos
 app.get('/admin/turnos/reprogramar', adminController.getReprogramarTurnos);
 app.post('/admin/turnos/reprogramar/guardar', adminController.postGuardarReprogramacion);
@@ -100,6 +103,20 @@ app.get('/admin/especialidades/gestion', adminController.getGestionEspecialidade
 app.post('/admin/especialidades/agregar', adminController.postAgregarEspecialidad);
 app.post('/admin/especialidades/editar', adminController.postEditarEspecialidad);
 app.post('/admin/especialidades/eliminar', adminController.postEliminarEspecialidad);
+
+
+app.get('/admin/disponibilidad/gestion', adminController.getGestionDisponibilidad);
+app.post('/admin/disponibilidad/generar', adminController.postGenerarDisponibilidad);
+app.post('/admin/disponibilidad/eliminar', adminController.postEliminarDisponibilidad);
+
+
+app.get('/admin/medicos/agregar', adminController.getAgregarMedico);
+app.post('/admin/medicos/agregar', adminController.postAgregarMedico);
+
+app.post('/admin/medicos/regenerar-agenda', adminController.postRegenerarAgendaMedico);
+
+app.get('/api/disponibilidad/fechas', adminController.getFechasDisponiblesAPI);
+app.get('/api/disponibilidad/horas', adminController.getHorasDisponiblesAPI);
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {

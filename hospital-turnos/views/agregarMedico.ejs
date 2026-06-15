@@ -3,87 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin - Agregar Profesional</title>
+    <title>Registrar Médico - Admin</title>
     <link rel="stylesheet" href="/css/styles.css">
     <style>
-        .form-container { max-width: 650px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .form-section { border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem; }
-        .form-section h3 { color: #334e68; margin-top: 0; }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
-        .form-group.full-width { grid-column: span 2; }
-        label { font-weight: bold; margin-bottom: 0.35rem; color: #475569; font-size: 0.9rem; }
-        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.95rem; }
-        .alert { padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; }
-        .alert-danger { background: #fde8e8; color: #9b1c1c; border-left: 4px solid #e11d48; }
-        .alert-success { background: #def7ec; color: #03543f; border-left: 4px solid #10b981; }
-        .btn-group { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; }
-        .btn-save { background: #1992d4; color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        .btn-save:hover { background: #1471a4; }
-        .btn-back { background: #64748b; color: white; text-decoration: none; padding: 0.7rem 1.5rem; border-radius: 4px; font-weight: bold; }
+        .admin-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .section-title { color: #334e68; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; }
+        .alert-danger { background: #fde8e8; color: #9b1c1c; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; border-left: 4px solid #e11d48; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.3rem; color: #475569; }
+        input, select { padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 4px; }
+        .agenda-box { background: #f0fdf4; padding: 1.5rem; border-radius: 6px; border: 1px solid #bbf7d0; border-left: 5px solid #22c55e; margin-top: 1rem; }
     </style>
 </head>
 <body>
-    <div class="form-container">
-        <h2>Alta de Personal Médico</h2>
-        <p style="color: #64748b; margin-top: -0.5rem;">Registrá un nuevo profesional y asignale sus credenciales de acceso de forma simultánea.</p>
+    <div class="admin-container">
+        <h2>Alta de Nuevo Profesional Médico</h2>
+        <p style="color: #64748b; margin-top: -0.5rem;">Complete los datos del médico y establezca su agenda de atención inicial.</p>
 
         <% if (typeof error !== 'undefined' && error) { %>
             <div class="alert alert-danger"><%= error %></div>
         <% } %>
-        <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert alert-success"><%= success %></div>
-        <% } %>
 
-        <form action="/admin/medicos/nuevo" method="POST">
+        <form action="/admin/medicos/agregar" method="POST">
             
-            <div class="form-section">
-                <h3>1. Datos del Profesional</h3>
-                <div class="grid-inputs">
-                    <div class="form-group">
-                        <label for="nombre">Nombre/s (*):</label>
-                        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Carlos">
-                    </div>
-                    <div class="form-group">
-                        <label for="apellido">Apellido/s (*):</label>
-                        <input type="text" id="apellido" name="apellido" required placeholder="Ej: Bilardo">
-                    </div>
-                    <div class="form-group">
-                        <label for="matricula">Matrícula Nacional/Provincial (*):</label>
-                        <input type="text" id="matricula" name="matricula" required placeholder="Ej: MN-12345">
-                    </div>
-                    <div class="form-group">
-                        <label for="id_especialidad">Especialidad Médica (*):</label>
-                        <select id="id_especialidad" name="id_especialidad" required>
-                            <option value="">-- Seleccione una Especialidad --</option>
-                            <% if (typeof especialidades !== 'undefined') { %>
-                                <% especialidades.forEach(esp => { %>
-                                    <option value="<%= esp.id_especialidad %>"><%= esp.nombre %></option>
-                                <% }); %>
-                            <% } %>
-                        </select>
-                    </div>
+            <h3 class="section-title">1. Datos Personales y Profesionales</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nombre(s):</label>
+                    <input type="text" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Apellido(s):</label>
+                    <input type="text" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label>Matrícula Médica (MN/MP):</label>
+                    <input type="text" name="matricula" required>
+                </div>
+                <div class="form-group">
+                    <label>Especialidad:</label>
+                    <select name="id_especialidad" required>
+                        <option value="" disabled selected>-- Seleccione --</option>
+                        <% especialidades.forEach(e => { %>
+                            <option value="<%= e.id_especialidad %>"><%= e.nombre %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico:</label>
+                    <input type="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono de Contacto:</label>
+                    <input type="text" name="telefono">
                 </div>
             </div>
 
-            <div class="form-section" style="border: none; margin-bottom: 0;">
-                <h3>2. Credenciales del Sistema (Rol Médico)</h3>
-                <div class="grid-inputs">
-                    <div class="form-group">
-                        <label for="username">Nombre de Usuario (*):</label>
-                        <input type="text" id="username" name="username" required placeholder="Ej: doctor_bilardo">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Contraseña Inicial (*):</label>
-                        <input type="password" id="password" name="password" required placeholder="••••••••">
-                    </div>
-                </div>
+            <div class="agenda-box">
+    <h3 style="margin-top: 0; color: #166534; border-bottom: 1px solid #86efac; padding-bottom: 0.5rem;">2. Horario de Atención Base (Opcional)</h3>
+    <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Seleccione los días de la semana y el rango horario. El sistema proyectará automáticamente la agenda del médico por los <strong>próximos 2 años</strong>.</p>
+    
+    <div class="form-grid">
+        <div class="form-group" style="grid-column: 1 / -1;">
+            <label>Días de Trabajo Semanales:</label>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem; background: #ffffff; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="1" checked> Lunes</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="2" checked> Martes</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="3" checked> Miércoles</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="4" checked> Jueves</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="5" checked> Viernes</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="6"> Sábado</label>
+                <label style="cursor: pointer; font-weight: normal;"><input type="checkbox" name="dias_trabajo" value="0"> Domingo</label>
             </div>
+        </div>
 
-            <div class="btn-group">
-                <a href="/dashboard/admin" class="btn-back">Volver al Panel</a>
-                <button type="submit" class="btn-save"> Registrar Médico</button>
+        <div class="form-group">
+            <label>Hora Inicio de Atención:</label>
+            <input type="time" name="hora_inicio" value="09:00">
+        </div>
+        <div class="form-group">
+            <label>Hora Fin de Atención:</label>
+            <input type="time" name="hora_fin" value="14:00">
+        </div>
+    </div>
+</div>
+
+            <div style="margin-top: 2rem; text-align: right;">
+                <button type="submit" style="background: #3b82f6; color: white; border: none; padding: 0.8rem 2rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1.1rem;">
+                Registrar Médico y Agenda
+                </button>
             </div>
         </form>
+
+        <p style="margin-top: 2rem;">
+            <a href="/admin/medicos/gestion" style="color: #64748b; text-decoration: none;">← Volver al Padrón de Médicos</a>
+        </p>
     </div>
 </body>
+</html>

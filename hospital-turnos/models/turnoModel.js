@@ -21,7 +21,7 @@ const Turno = sequelize.define('Turno', {
     },
     id_consultorio: {
         type: DataTypes.INTEGER,
-        allowNull: false // Matchea el NOT NULL de tu script de SQL
+        allowNull: true // Matchea el NOT NULL de tu script de SQL
     },
     fecha: {
         type: DataTypes.DATEONLY,

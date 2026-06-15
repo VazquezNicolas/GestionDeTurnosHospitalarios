@@ -4,91 +4,108 @@ const Especialidad = require('../models/especialidadModel');
 const Turno = require('../models/turnoModel');
 const Paciente = require('../models/pacienteModel');
 const Atencion = require('../models/atencionModel');
+const Disponibilidad = require('../models/disponibilidadModel'); 
 const { Op } = require('sequelize');
+
 // const { sequelize } = require('../config/database'); // Opcional por si usás transacciones
 
 // 1. MOSTRAR FORMULARIO DE ALTA (GET)
 const getAgregarMedico = async (req, res) => {
     try {
-        if (!req.session || req.session.id_rol !== 1) {
-            return res.redirect('/auth/login');
-        }
-
-        // 2. TRAER LAS ESPECIALIDADES REALES DE TU BD
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+        
+        // Necesitamos las especialidades para el menú desplegable
         const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-
-        // 3. PASARLAS A LA VISTA
-        res.render('agregarMedico', { 
-            especialidades, // <-- Enviamos el array real
-            error: undefined, 
-            success: undefined 
+        
+        return res.render('agregarMedico', { 
+            especialidades: especialidades || [],
+            error: req.query.error, 
+            exito: req.query.exito 
         });
     } catch (error) {
-        console.error('Error al cargar formulario de médicos:', error);
-        res.redirect('/dashboard/admin');
+        console.error('Error al cargar la vista de agregar médico:', error);
+        return res.redirect('/dashboard/admin');
     }
 };
 
 // 2. PROCESAR EL ALTA EN CASCADA (POST)
+// Procesar el Alta y Generar Agenda Inicial a 2 años (POST)
 const postAgregarMedico = async (req, res) => {
-    // 1. Extraemos las variables del formulario (Acá sí existen)
-    const { nombre, apellido, id_especialidad, matricula, username, password } = req.body;
+    const { 
+        nombre, apellido, matricula, id_especialidad, email, telefono,
+        hora_inicio, hora_fin, dias_trabajo 
+    } = req.body;
 
     try {
-        if (!req.session || req.session.id_rol !== 1) {
-            return res.redirect('/auth/login');
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        // 1. Creamos al profesional
+        const nuevoMedico = await Profesional.create({
+            nombre: nombre.trim(),
+            apellido: apellido.trim(),
+            matricula: matricula.trim(),
+            id_especialidad: parseInt(id_especialidad, 10),
+            email: email ? email.trim() : null,
+            telefono: telefono ? telefono.trim() : null
+        });
+
+        // 2. Normalizamos los días seleccionados (puede venir un string suelto o un array)
+        let diasSeleccionados = [];
+        if (dias_trabajo) {
+            if (Array.isArray(dias_trabajo)) {
+                diasSeleccionados = dias_trabajo.map(d => parseInt(d, 10));
+            } else {
+                diasSeleccionados = [parseInt(dias_trabajo, 10)];
+            }
         }
 
-        const usuarioExiste = await Usuario.findOne({ where: { nombre_usuario: username } });
-        if (usuarioExiste) {
-            const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-            return res.render('agregarMedico', { 
-                especialidades,
-                error: 'El nombre de usuario ya está en uso por otro miembro del sistema.',
-                success: undefined 
-            });
+        // 3. Generamos la agenda a 2 años si se indicaron horarios y días
+        if (hora_inicio && hora_fin && diasSeleccionados.length > 0) {
+            const slotsNuevos = [];
+            
+            let diaActual = new Date();
+            const diaFin = new Date();
+            diaFin.setFullYear(diaFin.getFullYear() + 2); // Proyectamos exactamente 2 años
+
+            while (diaActual <= diaFin) {
+                // En JavaScript: 0=Domingo, 1=Lunes, 2=Martes, etc.
+                // Verificamos si el día de la semana actual está entre los seleccionados
+                if (diasSeleccionados.includes(diaActual.getDay())) {
+                    let fechaSql = diaActual.toISOString().split('T')[0];
+                    
+                    let hrActual = new Date(`2000-01-01T${hora_inicio}:00`);
+                    let hrFin = new Date(`2000-01-01T${hora_fin}:00`);
+
+                    while (hrActual < hrFin) {
+                        let horaTexto = hrActual.getHours().toString().padStart(2, '0') + ':' + 
+                                        hrActual.getMinutes().toString().padStart(2, '0') + ':00';
+                        
+                        slotsNuevos.push({
+                            id_profesional: nuevoMedico.id_profesional,
+                            fecha: fechaSql,
+                            hora: horaTexto
+                        });
+                        
+                        hrActual.setMinutes(hrActual.getMinutes() + 15);
+                    }
+                }
+                diaActual.setDate(diaActual.getDate() + 1);
+            }
+
+            // Guardamos los miles de registros de golpe en MySQL
+            if (slotsNuevos.length > 0) {
+                await Disponibilidad.bulkCreate(slotsNuevos);
+            }
         }
 
-        // Paso A: Crear el Profesional con su FK relacional
-        const nuevoProfesional = await Profesional.create({
-            nombre,
-            apellido,
-            id_especialidad, 
-            matricula
-        });
-
-        // Paso B: Crear su Cuenta de Usuario
-        console.log("DATOS QUE LLEGAN AL BACKEND:", req.body);
-        await Usuario.create({
-            nombre_usuario: username,
-            contrasenia: password, 
-            id_rol: 2, 
-            id_profesional: nuevoProfesional.id_profesional, 
-            estado: 'Active'
-        });
-
-        // Traemos las especialidades de nuevo para repoblar el select al recargar con éxito
-        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-
-        // EXITO: Acá la variable 'apellido' existe perfectamente porque estamos dentro del mismo ámbito
-        return res.render('agregarMedico', { 
-            especialidades,
-            error: undefined, 
-            success: `¡El Dr. ${apellido} fue registrado con éxito!` 
-        });
+        return res.redirect('/admin/medicos/gestion?exito=Profesional+registrado+y+agenda+creada+por+los+próximos+2+años.');
 
     } catch (error) {
-        console.error(' Error crítico al dar de alta al médico:', error);
-        
-        // REPARACIÓN ACÁ: Traemos las especialidades para que la vista no se rompa al fallar
-        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
-        
-        // CORREGIDO: Eliminamos el uso de 'apellido' que causaba el ReferenceError
-        return res.render('agregarMedico', { 
-            especialidades,
-            error: 'Ocurrió un error interno en la base de datos al guardar el profesional. Verifique los campos obligatorios.', 
-            success: undefined 
-        });
+        console.error('Error al registrar médico:', error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.redirect('/admin/medicos/agregar?error=La+matrícula+ingresada+ya+se+encuentra+registrada.');
+        }
+        return res.redirect('/admin/medicos/agregar?error=Ocurrió+un+error+interno+al+guardar+los+datos.');
     }
 };
 
@@ -334,16 +351,46 @@ const getGestionMedicos = async (req, res) => {
 
         const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
         const totalPages = Math.ceil(count / limit);
+        
+        const hoyStr = new Date().toISOString().split('T')[0];
+        
+        for (let med of medicos) {
+            const slots = await Disponibilidad.findAll({
+                where: { 
+                    id_profesional: med.id_profesional,
+                    fecha: { [Op.gte]: hoyStr } // Desde hoy en adelante
+                },
+                limit: 150 // Tomamos una muestra representativa de turnos futuros
+            });
 
-        return res.render('gestionMedicos', {
+            if (slots.length > 0) {
+                // 1. Extraemos los días de la semana y los traducimos
+                const diasNumeros = [...new Set(slots.map(s => new Date(s.fecha + 'T12:00:00').getDay()))];
+                diasNumeros.sort((a, b) => a - b);
+                const mapaDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                const diasTexto = diasNumeros.map(d => mapaDias[d]).join(', ');
+
+                // 2. Extraemos la hora mínima de entrada y máxima de salida
+                const horas = slots.map(s => s.hora);
+                const horaMin = horas.reduce((min, h) => h < min ? h : min).substring(0, 5);
+                const horaMax = horas.reduce((max, h) => h > max ? h : max).substring(0, 5);
+
+                // 3. Lo guardamos dinámicamente en el objeto del médico
+                med.agendaResumen = `${diasTexto} | de ${horaMin} a ${horaMax} hs`;
+            } else {
+                med.agendaResumen = 'Sin agenda cargada';
+            }
+        }
+
+return res.render('gestionMedicos', {
             medicos: medicos || [],
             especialidades: especialidades || [],
             matricula_busqueda,
             id_especialidad_busqueda,
             currentPage: page,
             totalPages: totalPages === 0 ? 1 : totalPages,
-            error: errorAlert,  // Inyectamos la alerta de la URL
-            exito: exitoAlert   // Inyectamos la alerta de la URL
+            error: errorAlert,
+            exito: exitoAlert
         });
 
     } catch (error) {
@@ -518,8 +565,259 @@ const postEliminarEspecialidad = async (req, res) => {
         return res.redirect('/admin/especialidades/gestion?error=Ocurrió+un+error+interno+al+intentar+eliminar+el+registro.');
     }
 };
-//Turno.hasOne(Atencion, { as: 'atencion', foreignKey: 'id_turno' });
-//Atencion.belongsTo(Turno, { as: 'turno', foreignKey: 'id_turno' });
+
+// 1. Vista: Seleccionar médico y ver su agenda disponible (GET)
+const getGestionDisponibilidad = async (req, res) => {
+    const id_profesional = req.query.id_profesional;
+    const errorAlert = req.query.error;
+    const exitoAlert = req.query.exito;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        // Traemos a todos los médicos para el select principal
+        const medicos = await Profesional.findAll({ order: [['apellido', 'ASC']] });
+        
+        let disponibilidades = [];
+        let medicoSeleccionado = null;
+
+        if (id_profesional) {
+            medicoSeleccionado = await Profesional.findByPk(id_profesional);
+            
+            // Traemos solo la disponibilidad desde el día de hoy en adelante
+            const hoy = new Date().toISOString().split('T')[0];
+            disponibilidades = await Disponibilidad.findAll({
+                where: { 
+                    id_profesional: id_profesional,
+                    fecha: { [Op.gte]: hoy } 
+                },
+                order: [['fecha', 'ASC'], ['hora', 'ASC']]
+            });
+        }
+
+        return res.render('gestionDisponibilidad', {
+            medicos: medicos || [],
+            disponibilidades: disponibilidades || [],
+            medicoSeleccionado,
+            id_profesional_seleccionado: id_profesional || '',
+            error: errorAlert,
+            exito: exitoAlert
+        });
+
+    } catch (error) {
+        console.error('Error al cargar la disponibilidad:', error);
+        return res.redirect('/dashboard/admin');
+    }
+};
+
+// 2. Acción: Generar los bloques de 15 minutos en lote (POST)
+const postGenerarDisponibilidad = async (req, res) => {
+    const { id_profesional, fecha, hora_inicio, hora_fin } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        if (!id_profesional || !fecha || !hora_inicio || !hora_fin) {
+            return res.redirect('/admin/disponibilidad/gestion?error=Faltan+datos+para+generar+la+agenda.');
+        }
+
+        // Parseamos las horas para armar el bucle iterativo
+        let actual = new Date(`2000-01-01T${hora_inicio}:00`);
+        let fin = new Date(`2000-01-01T${hora_fin}:00`);
+        const slotsNuevos = [];
+
+        // Generamos bloques de 15 minutos hasta llegar a la hora de fin
+        while (actual < fin) {
+            // Formateamos la hora en texto "HH:MM:SS" seguro
+            let horaTexto = actual.getHours().toString().padStart(2, '0') + ':' + 
+                            actual.getMinutes().toString().padStart(2, '0') + ':00';
+            
+            // Verificamos que el médico no tenga ya este mismo bloque cargado para no duplicar
+            const existe = await Disponibilidad.findOne({
+                where: { id_profesional, fecha, hora: horaTexto }
+            });
+
+            if (!existe) {
+                slotsNuevos.push({
+                    id_profesional: parseInt(id_profesional, 10),
+                    fecha: fecha,
+                    hora: horaTexto
+                });
+            }
+            
+            // Sumamos 15 minutos exactos para el próximo ciclo
+            actual.setMinutes(actual.getMinutes() + 15);
+        }
+
+        // Si hay bloques nuevos, los guardamos todos de golpe en MySQL (Bulk Insert)
+        if (slotsNuevos.length > 0) {
+            await Disponibilidad.bulkCreate(slotsNuevos);
+            return res.redirect(`/admin/disponibilidad/gestion?id_profesional=${id_profesional}&exito=Se+generaron+${slotsNuevos.length}+horarios+nuevos+con+éxito.`);
+        } else {
+            return res.redirect(`/admin/disponibilidad/gestion?id_profesional=${id_profesional}&error=Todos+los+horarios+en+ese+rango+ya+estaban+creados.`);
+        }
+
+    } catch (error) {
+        console.error('Error al generar disponibilidad:', error);
+        return res.redirect(`/admin/disponibilidad/gestion?id_profesional=${id_profesional}&error=Ocurrió+un+error+al+guardar+los+horarios.`);
+    }
+};
+
+// 3. Acción: Eliminar un bloque de horario que ya no sirve (POST)
+const postEliminarDisponibilidad = async (req, res) => {
+    const { id_disponibilidad, id_profesional } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        await Disponibilidad.destroy({
+            where: { id_disponibilidad: parseInt(id_disponibilidad, 10) }
+        });
+
+        return res.redirect(`/admin/disponibilidad/gestion?id_profesional=${id_profesional}&exito=El+horario+fue+removido+de+la+agenda.`);
+    } catch (error) {
+        console.error('Error al eliminar disponibilidad:', error);
+        return res.redirect(`/admin/disponibilidad/gestion?id_profesional=${id_profesional}&error=Ocurrió+un+error+al+intentar+eliminar+el+registro.`);
+    }
+};
+
+// Acción: Regenerar la agenda del médico desde el panel de Staff (POST)
+const postRegenerarAgendaMedico = async (req, res) => {
+    const { id_profesional, hora_inicio, hora_fin, dias_trabajo, matricula_busqueda, page } = req.body;
+
+    // Mantenemos la memoria de la paginación y la búsqueda
+    let redirectUrl = `/admin/medicos/gestion?page=${page || 1}`;
+    if (matricula_busqueda) redirectUrl += `&matricula_busqueda=${matricula_busqueda}`;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        // 1. Normalizamos los días seleccionados (checkboxes)
+        let diasSeleccionados = [];
+        if (dias_trabajo) {
+            if (Array.isArray(dias_trabajo)) diasSeleccionados = dias_trabajo.map(d => parseInt(d, 10));
+            else diasSeleccionados = [parseInt(dias_trabajo, 10)];
+        }
+
+        if (!hora_inicio || !hora_fin || diasSeleccionados.length === 0) {
+            return res.redirect(`${redirectUrl}&error=Faltan+datos+para+generar+la+agenda.`);
+        }
+
+        // 2. Eliminamos la disponibilidad futura para no duplicar horarios
+        const hoy = new Date().toISOString().split('T')[0];
+        await Disponibilidad.destroy({
+            where: {
+                id_profesional: parseInt(id_profesional, 10),
+                fecha: { [Op.gte]: hoy } // Desde hoy en adelante
+            }
+        });
+
+        // 3. Generamos los nuevos slots por los próximos 2 años
+        const slotsNuevos = [];
+        let diaActual = new Date();
+        const diaFin = new Date();
+        diaFin.setFullYear(diaFin.getFullYear() + 2);
+
+        while (diaActual <= diaFin) {
+            if (diasSeleccionados.includes(diaActual.getDay())) {
+                let fechaSql = diaActual.toISOString().split('T')[0];
+                let hrActual = new Date(`2000-01-01T${hora_inicio}:00`);
+                let hrFin = new Date(`2000-01-01T${hora_fin}:00`);
+
+                while (hrActual < hrFin) {
+                    let horaTexto = hrActual.getHours().toString().padStart(2, '0') + ':' +
+                                    hrActual.getMinutes().toString().padStart(2, '0') + ':00';
+
+                    slotsNuevos.push({
+                        id_profesional: parseInt(id_profesional, 10),
+                        fecha: fechaSql,
+                        hora: horaTexto
+                    });
+
+                    hrActual.setMinutes(hrActual.getMinutes() + 15);
+                }
+            }
+            diaActual.setDate(diaActual.getDate() + 1);
+        }
+
+        if (slotsNuevos.length > 0) {
+            await Disponibilidad.bulkCreate(slotsNuevos);
+        }
+
+        return res.redirect(`${redirectUrl}&exito=Agenda+regenerada+exitosamente+por+los+próximos+2+años.`);
+    } catch (error) {
+        console.error('Error al regenerar agenda:', error);
+        return res.redirect(`${redirectUrl}&error=Ocurrió+un+error+al+intentar+regenerar+la+agenda.`);
+    }
+};
+
+const getFechasDisponiblesAPI = async (req, res) => {
+    const { id_profesional } = req.query;
+    if (!id_profesional) return res.json([]);
+
+    try {
+        const hoy = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+        
+        // Buscamos todas las fechas únicas generadas para este médico
+        const fechas = await Disponibilidad.findAll({
+            attributes: ['fecha'],
+            where: { 
+                id_profesional: id_profesional,
+                fecha: { [Op.gte]: hoy } // Mayor o igual a hoy
+            },
+            group: ['fecha'], // Agrupa para no traer la misma fecha 20 veces
+            order: [['fecha', 'ASC']]
+        });
+
+        // Devolvemos un array limpio solo con los textos de las fechas
+        return res.json(fechas.map(f => f.fecha));
+    } catch (error) {
+        console.error('Error en API de fechas:', error);
+        return res.status(500).json([]);
+    }
+};
+
+// API 2: Obtener las horas libres de un médico en una fecha específica
+const getHorasDisponiblesAPI = async (req, res) => {
+    const { id_profesional, fecha } = req.query;
+    if (!id_profesional || !fecha) return res.json([]);
+
+    try {
+        const hoy = new Date().toISOString().split('T')[0];
+        const ahora = new Date().toTimeString().split(' ')[0]; // "HH:MM:SS"
+
+        // 1. Traemos TODOS los bloques de la agenda del médico para ese día
+        let whereAgenda = { id_profesional, fecha };
+        
+        // Si el día elegido es HOY, filtramos para que solo traiga horas que todavía no pasaron
+        if (fecha === hoy) {
+            whereAgenda.hora = { [Op.gt]: ahora };
+        }
+
+        const bloquesAgenda = await Disponibilidad.findAll({
+            where: whereAgenda,
+            order: [['hora', 'ASC']]
+        });
+
+        // 2. Traemos los turnos que YA ESTÁN RESERVADOS para ese día
+        const turnosOcupados = await Turno.findAll({
+            where: { id_profesional, fecha, estado: 'Reservado' }
+        });
+        const horasOcupadas = turnosOcupados.map(t => t.hora);
+
+        // 3. Cruzamos los datos: filtramos los bloques que no estén en la lista de ocupados
+        const horasLibres = bloquesAgenda
+            .filter(b => !horasOcupadas.includes(b.hora))
+            .map(b => b.hora);
+
+        return res.json(horasLibres);
+    } catch (error) {
+        console.error('Error en API de horas:', error);
+        return res.status(500).json([]);
+    }
+};
+
+
 
 module.exports = {
     getAgregarMedico,
@@ -535,5 +833,11 @@ module.exports = {
     postEliminarEspecialidad,
     postEditarEspecialidad,
     postAgregarEspecialidad,
-    getGestionEspecialidades
+    getGestionEspecialidades,
+    getGestionDisponibilidad,
+    postGenerarDisponibilidad,
+    postEliminarDisponibilidad,
+    postRegenerarAgendaMedico,
+    getFechasDisponiblesAPI,
+    getHorasDisponiblesAPI,
 };
