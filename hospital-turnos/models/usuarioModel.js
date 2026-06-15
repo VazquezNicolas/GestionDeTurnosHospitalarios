@@ -35,7 +35,5 @@ const Usuario = sequelize.define('Usuario', {
     timestamps: false
 });
 
-// Relación lógica: Un Usuario pertenece a un Rol
-Usuario.belongsTo(Rol, { foreignKey: 'id_rol', as: 'rol' });
 
 module.exports = Usuario;

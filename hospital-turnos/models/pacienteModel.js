@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const Turno = require('./turnoModel');
 
 const Paciente = sequelize.define('Paciente', {
     id_paciente: {
@@ -44,5 +45,6 @@ const Paciente = sequelize.define('Paciente', {
     tableName: 'paciente',
     timestamps: false
 });
+
 
 module.exports = Paciente;

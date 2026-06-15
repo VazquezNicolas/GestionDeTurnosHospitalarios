@@ -40,7 +40,5 @@ const Atencion = sequelize.define('Atencion', {
 });
 
 // Configurar las asociaciones relacionales
-Turno.hasOne(Atencion, { foreignKey: 'id_turno', as: 'atencion' });
-Atencion.belongsTo(Turno, { foreignKey: 'id_turno', as: 'turno' });
 
 module.exports = Atencion;

@@ -31,6 +31,6 @@ const Profesional = sequelize.define('Profesional', {
     tableName: 'profesional',
     timestamps: false // Para que no busque las columnas createdAt/updatedAt
 });
-Profesional.belongsTo(Especialidad, { foreignKey: 'id_especialidad', as: 'especialidad' });
+
 
 module.exports = Profesional;

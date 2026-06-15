@@ -44,8 +44,4 @@ const Turno = sequelize.define('Turno', {
     timestamps: false
 });
 
-// Relaciones para los JOINs
-Turno.belongsTo(Paciente, { foreignKey: 'id_paciente', as: 'paciente' });
-Turno.belongsTo(Profesional, { foreignKey: 'id_profesional', as: 'profesional' });
-
 module.exports = Turno;

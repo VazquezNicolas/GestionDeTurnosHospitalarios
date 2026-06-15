@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reprogramación de Turnos - Panel Admin</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .admin-container { max-width: 1000px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .filter-box { background: #f8fafc; padding: 1.5rem; border-radius: 6px; margin-bottom: 2rem; border: 1px solid #cbd5e1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; }
+        th { background-color: #334e68; color: white; }
+        .btn-reprogramar { background-color: #f1c40f; color: #333; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 0.85rem; }
+        .reprogramar-panel { background: #fff3cd; padding: 1rem; border-radius: 6px; margin-top: 0.5rem; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h2>Control y Gestión de Agendas</h2>
+        <h3>RF-03: Reprogramación de Turnos Médicos</h3>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <% if (typeof exito !== 'undefined' && exito) { %>
+            <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= exito %></div>
+        <% } %>
+
+        <div class="filter-box">
+            <form action="/admin/turnos/reprogramar" method="GET" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                    <label for="id_profesional">Seleccionar Profesional Médico:</label>
+<select id="id_profesional" name="id_profesional" required>
+    <option value="" disabled selected>Seleccione un médico...</option>
+    
+    <% if (typeof medicos !== 'undefined' && medicos && medicos.length > 0) { %>
+        <% medicos.forEach(med => { %>
+            <option value="<%= med.id_profesional %>" <%= id_profesional_seleccionado == med.id_profesional ? 'selected' : '' %>>
+                Dr/Dra. <%= med.apellido %>, <%= med.nombre %> (Mat: <%= med.matricula %>)
+            </option>
+        <% }); %>
+    <% } %>
+</select>
+                </div>
+                <button type="submit" class="btn-submit" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem;">🔍 Ver Agenda</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Horario</th>
+                    <th>Fecha</th>
+                    <th>Paciente (DNI)</th>
+                    <th>Motivo de Consulta</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (turnos.length === 0) { %>
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #777; padding: 2rem;">
+                            No se encontraron turnos reservados o pendientes para el profesional seleccionado.
+                        </td>
+                    </tr>
+                <% } else { %>
+                    <% turnos.forEach(turno => { %>
+                        <tr>
+                            <td><strong><%= turno.hora %> hs</strong></td>
+                            <td><%= turno.fecha %></td>
+                            <td><%= turno.paciente ? (turno.paciente.apellido + ', ' + turno.paciente.nombre + ' (' + turno.paciente.dni + ')') : 'No vinculado' %></td>
+                            <td><%= turno.motivo_consulta %></td>
+                            <td><span class="badge" style="background: #fff3cd; color: #856404; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;"><%= turno.estado %></span></td>
+                            <td>
+                                <button type="button" class="btn-reprogramar" onclick="toggleReprogramar('<%= turno.id_turno %>')">🔄 Reprogramar</button>
+                            </td>
+                        </tr>
+                        
+                        <tr id="panel-<%= turno.id_turno %>" style="display: none; background: #fafafa;">
+                            <td colspan="6">
+                                <div class="reprogramar-panel">
+                                    <form action="/admin/turnos/reprogramar/guardar" method="POST" style="display: flex; gap: 1rem; align-items: flex-end;">
+                                        <input type="hidden" name="id_turno" value="<%= turno.id_turno %>">
+                                        <input type="hidden" name="id_profesional_redirect" value="<%= id_profesional_seleccionado %>">
+                                        
+                                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                            <label>Nueva Fecha:</label>
+                                            <input type="date" name="nueva_fecha" id="fecha-<%= turno.id_turno %>" required onchange="cargarHorariosReprogramacion('<%= turno.id_turno %>', '<%= id_profesional_seleccionado %>')">
+                                        </div>
+                                        
+                                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                            <label>Horario Disponible (15 min):</label>
+                                            <select name="nueva_hora" id="hora-<%= turno.id_turno %>" required disabled>
+                                                <option value="" disabled selected>Seleccione una fecha primero...</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn-save" style="background: #2ecc71; padding: 0.6rem 1.2rem; border-radius: 4px; color: white; border: none; font-weight: bold; cursor: pointer;">💾 Confirmar Cambio</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+
+        <p style="margin-top: 2rem;">
+            <a href="/dashboard/admin" style="color: #64748b; text-decoration: none;">← Volver al Panel General</a>
+        </p>
+    </div>
+
+    <script>
+        // Muestra u oculta el mini-formulario de reprogramación
+        function toggleReprogramar(idTurno) {
+            const panel = document.getElementById(`panel-${idTurno}`);
+            panel.style.display = panel.style.display === 'none' ? 'table-row' : 'none';
+            
+            // Seteamos la validación min temporal que ya programamos antes
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById(`fecha-${idTurno}`).setAttribute('min', hoy);
+        }
+
+        // Reutiliza la API dinámica de los 15 minutos que armamos para el formulario de asignación
+        async function cargarHorariosReprogramacion(idTurno, idProf) {
+            const fecha = document.getElementById(`fecha-${idTurno}`).value;
+            const selectHora = document.getElementById(`hora-${idTurno}`);
+            
+            if (!fecha || !idProf) return;
+
+            selectHora.innerHTML = '<option value="" disabled selected>Calculando...</option>';
+            selectHora.disabled = true;
+
+            try {
+                const response = await fetch(`/api/turnos/horarios-disponibles?id_profesional=${idProf}&fecha=${fecha}`);
+                const horarios = await response.json();
+
+                if (horarios.length === 0) {
+                    selectHora.innerHTML = '<option value="" disabled selected>Sin turnos libres</option>';
+                    return;
+                }
+
+                selectHora.innerHTML = '<option value="" disabled selected>Seleccione hora...</option>';
+                horarios.forEach(h => {
+                    selectHora.innerHTML += `<option value="${h}">${h.substring(0,5)} hs</option>`;
+                });
+                selectHora.disabled = false;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

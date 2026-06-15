@@ -20,6 +20,20 @@ const Usuario = require('./models/usuarioModel');
 const Paciente = require('./models/pacienteModel');
 const Turno = require('./models/turnoModel');
 const Especialidad = require('./models/especialidadModel');
+const Atencion = require('./models/atencionModel');
+const Profesional = require('./models/profesionalModel');
+
+// 1. Relación Paciente ↔ Turno (Basado en la FK id_paciente de tu tabla 'turno')
+Paciente.hasMany(Turno, { as: 'turnos', foreignKey: 'id_paciente' });
+Turno.belongsTo(Paciente, { as: 'paciente', foreignKey: 'id_paciente' });
+
+// 2. Relación Turno ↔ RegistroAtencion (Basado en la FK id_turno de 'registro_atencion')
+Turno.hasOne(Atencion, { as: 'registro_atencion', foreignKey: 'id_turno' });
+Atencion.belongsTo(Turno, { as: 'turno', foreignKey: 'id_turno' });
+
+// 3. Relación Turno ↔ Profesional (Basado en la FK id_profesional de tu tabla 'turno')
+Profesional.hasMany(Turno, { as: 'turnos', foreignKey: 'id_profesional' });
+Turno.belongsTo(Profesional, { as: 'profesional', foreignKey: 'id_profesional' });
 
 const app = express();
 const PORT = 3000;
@@ -72,6 +86,10 @@ app.get('/turnos', turnoController.getVerTurnos);
 app.get('/admin/medicos/nuevo', adminController.getAgregarMedico);
 app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
 
+// Rutas exclusivas del Administrador para la reprogramación de turnos
+app.get('/admin/turnos/reprogramar', adminController.getReprogramarTurnos);
+app.post('/admin/turnos/reprogramar/guardar', adminController.postGuardarReprogramacion);
+app.get('/admin/pacientes/gestion', adminController.getGestionPacientes);
 // Redirección por defecto al login
 app.get('/', (req, res) => {
     res.redirect('/auth/login');

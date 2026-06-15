@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fichas Médicas e Historias Clínicas - Admin</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .container { max-width: 1100px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .search-box { background: #f1f5f9; padding: 1.25rem; border-radius: 6px; margin-bottom: 2rem; border: 1px solid #cbd5e1; }
+        .paciente-card { border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 1.5rem; background: #fff; overflow: hidden; }
+        .paciente-header { background: #334e68; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .paciente-body { padding: 1.25rem; background: #f8fafc; }
+        .historia-clinica-box { background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-top: 1rem; }
+        .evolucion-item { border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem; background: #fdfdfd; padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid #10b981; }
+        .btn-toggle { background: #1992d4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-toggle:hover { background: #1471a4; }
+        .alert-danger { background: #fde8e8; color: #9b1c1c; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; border-left: 4px solid #e11d48; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Buscador Centralizado de Fichas Médicas</h2>
+        <p style="color: #64748b; margin-top: -0.5rem;">Módulo interno de supervisión clínica. Buscá pacientes por DNI para auditar sus datos y consultar su historial.</p>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+
+        <div class="search-box">
+            <form action="/admin/pacientes/gestion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label for="dni_busqueda">Filtrar por Documento Nacional de Identidad (DNI):</label>
+                    <input type="text" id="dni_busqueda" name="dni_busqueda" value="<%= dni_busqueda %>" placeholder="Ej: 46123456">
+                </div>
+                <button type="submit" class="btn-save" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem; background: #334e68; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🔍 Buscar Ficha</button>
+                <% if (dni_busqueda) { %>
+                    <a href="/admin/pacientes/gestion" class="btn-back" style="padding: 0.65rem 1.2rem; background: #94a3b8; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Limpiar Filtro</a>
+                <% } %>
+            </form>
+        </div>
+
+        <div class="listado-pacientes">
+            <% if (pacientes.length === 0) { %>
+                <div style="text-align: center; color: #64748b; padding: 3rem; border: 2px dashed #cbd5e1; border-radius: 6px; background: #f8fafc;">
+                    No se encontraron pacientes registrados con el criterio de búsqueda ingresado.
+                </div>
+            <% } else { %>
+                <% pacientes.forEach(paciente => { %>
+                    <div class="paciente-card">
+                        <div class="paciente-header">
+                            <div>
+                                <strong style="font-size: 1.1rem;"><%= paciente.apellido %>, <%= paciente.nombre %></strong>
+                                <span style="margin-left: 1rem; opacity: 0.85;">| DNI: <%= paciente.dni %></span>
+                            </div>
+                            <button type="button" class="btn-toggle" onclick="toggleHistoria('<%= paciente.id_paciente %>')">🩺 Ver Historia Clínica</button>
+                        </div>
+                        
+                        <div class="paciente-body">
+                            <p style="margin: 0 0 0.5rem 0;"><strong>Correo Electrónico:</strong> <%= paciente.email || 'No registrado' %></p>
+                            <p style="margin: 0;"><strong>Teléfono de Contacto:</strong> <%= paciente.telefono || 'No registrado' %></p>
+                            
+                            <div id="hc-<%= paciente.id_paciente %>" class="historia-clinica-box" style="display: none;">
+                                <h4 style="color: #334e68; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Evoluciones Clínicas Registradas</h4>
+                                
+                                <% 
+                                    // Filtramos las atenciones reales mapeando con el alias físico 'registro_atencion'
+                                    let atencionesReales = [];
+                                    if (paciente.turnos) {
+                                        paciente.turnos.forEach(t => {
+                                            // 👇 CORREGIDO: Mapeo exacto con tu alias de app.js y tu tabla MySQL
+                                            const evol = t.registro_atencion; 
+                                            
+                                            if (evol) {
+                                                atencionesReales.push({
+                                                    fecha: evol.fecha_atencion,
+                                                    diagnostico: evol.diagnostico,
+                                                    tratamiento: evol.tratamiento,
+                                                    observaciones: evol.observaciones,
+                                                    cie10: evol.codigo_cie10,
+                                                    medico: t.profesional ? `Dr/Dra. ${t.profesional.apellido}, ${t.profesional.nombre}` : 'No especificado'
+                                                });
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Ordenamos las consultas cronológicamente de la más nueva a la más vieja
+                                    atencionesReales.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                                %>
+
+                                <% if (atencionesReales.length === 0) { %>
+                                    <p style="color: #64748b; font-style: italic; margin: 0;">El paciente no registra consultas médicas cerradas ni evoluciones históricas en el sistema.</p>
+                                <% } else { %>
+                                    <% atencionesReales.forEach(item => { %>
+                                        <div class="evolucion-item">
+                                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 0.35rem;">
+                                                <span><strong>Fecha de Consulta:</strong> <%= item.fecha %></span>
+                                                <span><strong>Atendió:</strong> <%= item.medico %></span>
+                                            </div>
+                                            <p style="margin: 0.25rem 0;"><strong>Diagnóstico:</strong> <%= item.diagnostico %></p>
+                                            <% if (item.tratamiento) { %>
+                                                <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>Tratamiento:</strong> <%= item.tratamiento %></p>
+                                            <% } %>
+                                            <% if (item.observaciones) { %>
+                                                <p style="margin: 0.25rem 0; font-size: 0.9rem; color: #64748b; font-style: italic;"><strong>Observaciones:</strong> <%= item.observaciones %></p>
+                                            <% } %>
+                                            <% if (item.cie10) { %>
+                                                <span style="display: inline-block; background: #e2e8f0; padding: 0.15rem 0.35rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-top: 0.25rem;">CIE-10: <%= item.cie10 %></span>
+                                            <% } %>
+                                        </div>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+
+        <p style="margin-top: 2rem;">
+            <a href="/dashboard/admin" style="color: #64748b; text-decoration: none;">← Volver al Panel General</a>
+        </p>
+    </div>
+
+    <script>
+        // Muestra u oculta el cajón de la historia clínica
+        function toggleHistoria(idPaciente) {
+            const contenedor = document.getElementById(`hc-${idPaciente}`);
+            contenedor.style.display = contenedor.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
