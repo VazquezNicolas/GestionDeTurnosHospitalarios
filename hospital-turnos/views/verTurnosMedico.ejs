@@ -149,8 +149,8 @@
             selectHora.disabled = true;
 
             try {
-                const response = await fetch(`/api/turnos/horarios-disponibles?id_profesional=${idProf}&fecha=${fecha}`);
-                const horarios = await response.json();
+            const response = await fetch(`/api/disponibilidad/horas?id_profesional=${idProf}&fecha=${fecha}`);
+            const horarios = await response.json();
 
                 if (horarios.length === 0) {
                     selectHora.innerHTML = '<option value="" disabled selected>Sin turnos libres</option>';

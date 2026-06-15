@@ -153,41 +153,46 @@ where: {
 
 // 2. Acción: Guardar la reprogramación física en MySQL (POST)
 const postGuardarReprogramacion = async (req, res) => {
-    const { id_turno, nueva_fecha, nueva_hora, id_profesional_redirect } = req.body;
+    const { id_turno, id_profesional_redirect, nueva_fecha, nueva_hora } = req.body;
 
     try {
-        if (!req.session || req.session.id_rol !== 1) {
-            return res.redirect('/auth/login');
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        // 1. VALIDACIÓN: ¿Ese horario existe en la tabla de Disponibilidad del médico?
+        const esDisponible = await Disponibilidad.findOne({
+            where: { id_profesional: id_profesional_redirect, fecha: nueva_fecha, hora: nueva_hora }
+        });
+
+        if (!esDisponible) {
+            return res.redirect('/admin/turnos/reprogramar?error=El+médico+no+tiene+disponibilidad+en+ese+horario.');
         }
 
-        // UPDATE en MySQL usando Sequelize
-        await Turno.update(
-            { 
+        // 2. VALIDACIÓN: ¿Está ocupado por otro turno? (Evitar superposición RF-12)
+        const ocupado = await Turno.findOne({
+            where: { 
+                id_profesional: id_profesional_redirect, 
                 fecha: nueva_fecha, 
-                hora: nueva_hora 
-            },
+                hora: nueva_hora,
+                estado: 'Reservado',
+                id_turno: { [Op.ne]: id_turno } // Que no sea el turno que ya estamos editando
+            }
+        });
+
+        if (ocupado) {
+            return res.redirect('/admin/turnos/reprogramar?error=Ese+horario+ya+fue+asignado+a+otro+paciente.');
+        }
+
+        // 3. Si pasó las dos validaciones, actualizamos
+        await Turno.update(
+            { fecha: nueva_fecha, hora: nueva_hora },
             { where: { id_turno: parseInt(id_turno, 10) } }
         );
 
-        // Volvemos a buscar los datos necesarios para redibujar la pantalla manteniendo al operador en el mismo médico
-        const medicos = await Profesional.findAll({ order: [['apellido', 'ASC']] });
-        const turnosDelMedico = await Turno.findAll({
-            where: { id_profesional: parseInt(id_profesional_redirect, 10), estado: 'Reservado' },
-            include: [{ model: Paciente, as: 'paciente' }],
-            order: [['fecha', 'ASC'], ['hora', 'ASC']]
-        });
-
-        res.render('verTurnosMedico', {
-            medicos,
-            turnos: turnosDelMedico,
-            id_profesional_seleccionado: id_profesional_redirect,
-            error: undefined,
-            exito: '¡El turno fue reprogramado y guardado físicamente en MySQL con éxito!'
-        });
+        return res.redirect(`/admin/turnos/reprogramar?id_profesional=${id_profesional_redirect}&exito=Turno+reprogramado+exitosamente.`);
 
     } catch (error) {
-        console.error('Error al guardar la reprogramación del turno:', error);
-        res.redirect('/dashboard/admin');
+        console.error('Error al guardar la reprogramación:', error);
+        return res.redirect('/admin/turnos/reprogramar?error=Error+al+procesar+la+reprogramación.');
     }
 };
 
