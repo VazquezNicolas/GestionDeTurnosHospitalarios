@@ -43,7 +43,7 @@
                         <% } %>
                     </select>
                 </div>
-                <button type="submit" class="btn-submit" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem;">🔍 Ver Agenda</button>
+                <button type="submit" class="btn-submit" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem;"> Ver Agenda</button>
             </form>
         </div>
 
@@ -77,7 +77,7 @@
                             <!-- COLUMNA DE ACCIÓN CORREGIDA -->
                             <td>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <button type="button" class="btn-reprogramar" onclick="toggleReprogramar('<%= turno.id_turno %>')">🔄 Reprogramar</button>
+                                    <button type="button" class="btn-reprogramar" onclick="toggleReprogramar('<%= turno.id_turno %>')"> Reprogramar</button>
 
                                     <!-- Formulario correctamente anidado usando 'turno.id_turno' -->
                                     <form action="/admin/turnos/cancelar" method="POST" onsubmit="return confirm('¿Está seguro de que desea CANCELAR este turno médico definitivamente? El espacio se liberará en la agenda.');" style="margin: 0;">
@@ -86,7 +86,7 @@
                                         <input type="hidden" name="id_medico" value="<%= id_profesional_seleccionado %>"> 
                                         
                                         <button type="submit" class="btn-cancelar" style="background: #ef4444; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">
-                                            ❌ Cancelar Cita
+                                            Cancelar Cita
                                         </button>
                                     </form>
                                 </div>
@@ -112,7 +112,7 @@
                                             </select>
                                         </div>
                                         
-                                        <button type="submit" class="btn-save" style="background: #2ecc71; padding: 0.6rem 1.2rem; border-radius: 4px; color: white; border: none; font-weight: bold; cursor: pointer;">💾 Confirmar Cambio</button>
+                                        <button type="submit" class="btn-save" style="background: #2ecc71; padding: 0.6rem 1.2rem; border-radius: 4px; color: white; border: none; font-weight: bold; cursor: pointer;"> Confirmar Cambio</button>
                                     </form>
                                 </div>
                             </td>

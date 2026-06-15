@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Especialidades - Admin</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .admin-container { max-width: 900px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .add-box { background: #f8fafc; padding: 1.5rem; border-radius: 6px; margin-bottom: 2rem; border: 1px solid #cbd5e1; border-left: 5px solid #10b981; }
+        .alert-danger { background: #fde8e8; color: #9b1c1c; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; border-left: 4px solid #e11d48; }
+        .alert-success { background: #e3f9e5; color: #1f7a28; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; border-left: 4px solid #10b981; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; }
+        th, td { padding: 0.85rem; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #334e68; color: white; }
+        .btn-action { color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .btn-edit { background-color: #f59e0b; }
+        .btn-delete { background-color: #ef4444; }
+        .edit-panel { background: #fffbeb; padding: 1rem; border-radius: 6px; margin-top: 0.5rem; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <h2>Catálogo de Especialidades Médicas</h2>
+        <p style="color: #64748b; margin-top: -0.5rem;">Administración de las áreas clínicas de la institución.</p>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <% if (typeof exito !== 'undefined' && exito) { %>
+            <div class="alert alert-success"><%= exito %></div>
+        <% } %>
+
+        <div class="add-box">
+            <h4 style="margin-top: 0; color: #047857; margin-bottom: 1rem;">Registrar Nueva Especialidad</h4>
+            <form action="/admin/especialidades/agregar" method="POST" style="display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+                    <label>Nombre de la Especialidad:</label>
+                    <input type="text" name="nombre" placeholder="Ej: Pediatría" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                </div>
+                <div class="form-group" style="flex: 2 1 40%; margin-bottom: 0;">
+                    <label>Descripción (Opcional):</label>
+                    <input type="text" name="descripcion" placeholder="Breve descripción del área..." style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+                <button type="submit" style="margin-top: 1.4rem; padding: 0.6rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Agregar</button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Especialidad</th>
+                    <th style="width: 45%;">Descripción</th>
+                    <th style="width: 25%; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (especialidades.length === 0) { %>
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #64748b; padding: 2rem;">No hay especialidades registradas en el sistema.</td>
+                    </tr>
+                <% } else { %>
+                    <% especialidades.forEach(esp => { %>
+                        <tr>
+                            <td><strong><%= esp.nombre %></strong></td>
+                            <td style="color: #475569; font-size: 0.9rem;"><%= esp.descripcion || 'Sin descripción' %></td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                    <button type="button" class="btn-action btn-edit" onclick="toggleEdit('panel-<%= esp.id_especialidad %>')"> Editar</button>
+                                    
+                                    <form action="/admin/especialidades/eliminar" method="POST" onsubmit="return confirm('¿Confirma la eliminación de la especialidad <%= esp.nombre %>?');" style="margin: 0;">
+                                        <input type="hidden" name="id_especialidad" value="<%= esp.id_especialidad %>">
+                                        <button type="submit" class="btn-action btn-delete"> Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr id="panel-<%= esp.id_especialidad %>" style="display: none; background: #fafafa;">
+                            <td colspan="3" style="padding: 0;">
+                                <div class="edit-panel">
+                                    <form action="/admin/especialidades/editar" method="POST" style="display: flex; gap: 1rem; align-items: flex-end;">
+                                        <input type="hidden" name="id_especialidad" value="<%= esp.id_especialidad %>">
+                                        
+                                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                            <label style="font-size: 0.85rem; font-weight: bold; color: #b45309;">Modificar Nombre:</label>
+                                            <input type="text" name="nombre" value="<%= esp.nombre %>" style="width: 100%; padding: 0.4rem; border: 1px solid #fcd34d; border-radius: 4px;" required>
+                                        </div>
+                                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                                            <label style="font-size: 0.85rem; font-weight: bold; color: #b45309;">Modificar Descripción:</label>
+                                            <input type="text" name="descripcion" value="<%= esp.descripcion || '' %>" style="width: 100%; padding: 0.4rem; border: 1px solid #fcd34d; border-radius: 4px;">
+                                        </div>
+                                        
+                                        <button type="submit" class="btn-action btn-edit" style="padding: 0.5rem 1rem;"> Guardar</button>
+                                        <button type="button" class="btn-action" style="background: #94a3b8; padding: 0.5rem 1rem;" onclick="toggleEdit('panel-<%= esp.id_especialidad %>')">Cancelar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+
+        <p style="margin-top: 2rem;">
+            <a href="/dashboard/admin" style="color: #64748b; text-decoration: none;">← Volver al Panel General</a>
+        </p>
+    </div>
+
+    <script>
+        function toggleEdit(idPanel) {
+            const panel = document.getElementById(idPanel);
+            panel.style.display = panel.style.display === 'none' ? 'table-row' : 'none';
+        }
+    </script>
+</body>
+</html>

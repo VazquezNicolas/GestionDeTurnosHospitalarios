@@ -298,6 +298,226 @@ const postEditarPacienteAdmin = async (req, res) => {
         return res.redirect('/admin/pacientes/gestion');
     }
 };
+
+// 1. MODIFICACIÓN: Ajustamos para que lea alertas (error/exito) de la URL tras los redireccionamientos
+const getGestionMedicos = async (req, res) => {
+    const matricula_busqueda = req.query.matricula_busqueda || '';
+    const id_especialidad_busqueda = req.query.id_especialidad_busqueda || '';
+    
+    // Capturamos posibles mensajes de éxito o error que vengan por la URL
+    const errorAlert = req.query.error || undefined;
+    const exitoAlert = req.query.exito || undefined;
+    
+    const limit = 10;
+    const page = parseInt(req.query.page, 10) || 1;
+    const offset = (page - 1) * limit;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        let filtroWhere = {};
+        if (matricula_busqueda.trim() !== '') {
+            filtroWhere.matricula = matricula_busqueda.trim();
+        }
+        if (id_especialidad_busqueda !== '') {
+            filtroWhere.id_especialidad = parseInt(id_especialidad_busqueda, 10);
+        }
+
+        const { count, rows: medicos } = await Profesional.findAndCountAll({
+            where: filtroWhere,
+            limit: limit,
+            offset: offset,
+            order: [['apellido', 'ASC']]
+        });
+
+        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
+        const totalPages = Math.ceil(count / limit);
+
+        return res.render('gestionMedicos', {
+            medicos: medicos || [],
+            especialidades: especialidades || [],
+            matricula_busqueda,
+            id_especialidad_busqueda,
+            currentPage: page,
+            totalPages: totalPages === 0 ? 1 : totalPages,
+            error: errorAlert,  // Inyectamos la alerta de la URL
+            exito: exitoAlert   // Inyectamos la alerta de la URL
+        });
+
+    } catch (error) {
+        console.error('Error crítico al cargar gestión de médicos:', error);
+        return res.render('gestionMedicos', {
+            medicos: [], especialidades: [], matricula_busqueda: '', id_especialidad_busqueda: '', currentPage: 1, totalPages: 1,
+            error: 'Ocurrió un error al consultar la base de datos.',
+            exito: undefined
+        });
+    }
+};
+
+// 2. NUEVA ACCIÓN: Eliminar médico de la base de datos de forma segura (POST)
+const postEliminarMedicoAdmin = async (req, res) => {
+    const { id_profesional, matricula_busqueda, id_especialidad_busqueda, page } = req.body;
+
+    // Armamos la URL de retorno para conservar la página y filtros exactos donde estaba el operador
+    let redirectUrl = `/admin/medicos/gestion?page=${page || 1}`;
+    if (matricula_busqueda) redirectUrl += `&matricula_busqueda=${matricula_busqueda}`;
+    if (id_especialidad_busqueda) redirectUrl += `&id_especialidad_busqueda=${id_especialidad_busqueda}`;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        if (!id_profesional) {
+            return res.redirect(redirectUrl);
+        }
+
+        // Ejecutamos el DELETE en MySQL
+        await Profesional.destroy({
+            where: { id_profesional: parseInt(id_profesional, 10) }
+        });
+
+        return res.redirect(`${redirectUrl}&exito=El+profesional+médico+ha+sido+eliminado+correctamente.`);
+
+    } catch (error) {
+        console.error('Error al intentar eliminar médico:', error);
+        
+        // Controlamos si la base de datos rechazó el borrado por la restricción de claves foráneas
+        if (error.name === 'SequelizeForeignKeyConstraintError') {
+            return res.redirect(`${redirectUrl}&error=No+es+posible+eliminar+al+médico+porque+posee+turnos+asociados+en+el+sistema.+Considere+reprogramar+o+cancelar+sus+citas+primero.`);
+        }
+        
+        return res.redirect(`${redirectUrl}&error=Ocurrió+un+error+interno+al+intentar+eliminar+el+registro.`);
+    }
+};
+
+// 2. Acción: Editar los datos del Médico (POST)
+const postEditarMedicoAdmin = async (req, res) => {
+    const { id_profesional, nombre, apellido, matricula, id_especialidad, email, telefono, matricula_busqueda, page } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        if (!id_profesional) {
+            return res.redirect('/admin/medicos/gestion');
+        }
+
+        // Actualizamos los datos en MySQL
+        await Profesional.update(
+            { nombre, apellido, matricula, id_especialidad, email, telefono },
+            { where: { id_profesional: parseInt(id_profesional, 10) } }
+        );
+
+        // Armamos la URL de retorno para no perder ni el filtro ni la página actual
+        let redirectUrl = `/admin/medicos/gestion?page=${page || 1}`;
+        if (matricula_busqueda) {
+            redirectUrl += `&matricula_busqueda=${matricula_busqueda}`;
+        }
+        
+        return res.redirect(redirectUrl);
+
+    } catch (error) {
+        console.error('Error crítico al editar datos del médico:', error);
+        return res.redirect('/admin/medicos/gestion');
+    }
+};
+
+// 1. Vista: Listar Especialidades y formulario de alta (GET)
+const getGestionEspecialidades = async (req, res) => {
+    const errorAlert = req.query.error || undefined;
+    const exitoAlert = req.query.exito || undefined;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+
+        // Traemos todas las especialidades ordenadas alfabéticamente
+        const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
+
+        return res.render('gestionEspecialidades', {
+            especialidades: especialidades || [],
+            error: errorAlert,
+            exito: exitoAlert
+        });
+
+    } catch (error) {
+        console.error('Error al cargar especialidades:', error);
+        return res.redirect('/dashboard/admin');
+    }
+};
+
+// 2. Acción: Agregar nueva especialidad (POST)
+const postAgregarEspecialidad = async (req, res) => {
+    const { nombre, descripcion } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        await Especialidad.create({ 
+            nombre: nombre.trim(), 
+            descripcion: descripcion ? descripcion.trim() : null 
+        });
+
+        return res.redirect('/admin/especialidades/gestion?exito=Especialidad+registrada+correctamente.');
+    } catch (error) {
+        console.error('Error al agregar especialidad:', error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.redirect('/admin/especialidades/gestion?error=Ya+existe+una+especialidad+registrada+con+ese+nombre.');
+        }
+        return res.redirect('/admin/especialidades/gestion?error=Ocurrió+un+error+al+intentar+guardar+la+especialidad.');
+    }
+};
+
+// 3. Acción: Editar especialidad existente (POST)
+const postEditarEspecialidad = async (req, res) => {
+    const { id_especialidad, nombre, descripcion } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        await Especialidad.update(
+            { 
+                nombre: nombre.trim(), 
+                descripcion: descripcion ? descripcion.trim() : null 
+            },
+            { where: { id_especialidad: parseInt(id_especialidad, 10) } }
+        );
+
+        return res.redirect('/admin/especialidades/gestion?exito=Especialidad+actualizada+correctamente.');
+    } catch (error) {
+        console.error('Error al editar especialidad:', error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.redirect('/admin/especialidades/gestion?error=El+nombre+ingresado+ya+está+siendo+utilizado+por+otra+especialidad.');
+        }
+        return res.redirect('/admin/especialidades/gestion?error=Ocurrió+un+error+al+intentar+actualizar+la+especialidad.');
+    }
+};
+
+// 4. Acción: Eliminar especialidad (POST)
+const postEliminarEspecialidad = async (req, res) => {
+    const { id_especialidad } = req.body;
+
+    try {
+        if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
+
+        await Especialidad.destroy({
+            where: { id_especialidad: parseInt(id_especialidad, 10) }
+        });
+
+        return res.redirect('/admin/especialidades/gestion?exito=Especialidad+eliminada+de+forma+definitiva.');
+    } catch (error) {
+        console.error('Error al eliminar especialidad:', error);
+        if (error.name === 'SequelizeForeignKeyConstraintError') {
+            return res.redirect('/admin/especialidades/gestion?error=No+se+puede+eliminar+la+especialidad+porque+existen+médicos+o+consultorios+vinculados+a+ella.');
+        }
+        return res.redirect('/admin/especialidades/gestion?error=Ocurrió+un+error+interno+al+intentar+eliminar+el+registro.');
+    }
+};
 //Turno.hasOne(Atencion, { as: 'atencion', foreignKey: 'id_turno' });
 //Atencion.belongsTo(Turno, { as: 'turno', foreignKey: 'id_turno' });
 
@@ -308,5 +528,12 @@ module.exports = {
     postGuardarReprogramacion,
     getGestionPacientes,
     postCancelarTurnoAdmin,
-    postEditarPacienteAdmin
+    postEditarPacienteAdmin,
+    getGestionMedicos,
+    postEditarMedicoAdmin,
+    postEliminarMedicoAdmin,
+    postEliminarEspecialidad,
+    postEditarEspecialidad,
+    postAgregarEspecialidad,
+    getGestionEspecialidades
 };

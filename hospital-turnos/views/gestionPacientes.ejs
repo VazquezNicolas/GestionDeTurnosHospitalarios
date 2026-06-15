@@ -37,7 +37,7 @@
                     <label for="dni_busqueda">Filtrar por Documento Nacional de Identidad (DNI):</label>
                     <input type="text" id="dni_busqueda" name="dni_busqueda" value="<%= dni_busqueda %>" placeholder="Ej: 46123456">
                 </div>
-                <button type="submit" class="btn-save" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem; background: #334e68; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🔍 Buscar Ficha</button>
+                <button type="submit" class="btn-save" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem; background: #334e68; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;"> Buscar Ficha</button>
                 <% if (dni_busqueda) { %>
                     <a href="/admin/pacientes/gestion" class="btn-back" style="padding: 0.65rem 1.2rem; background: #94a3b8; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Limpiar Filtro</a>
                 <% } %>
@@ -58,9 +58,9 @@
                                 <span style="margin-left: 1rem; opacity: 0.85;">| DNI: <%= paciente.dni %></span>
                             </div>
 <div>
-    <button type="button" class="btn-toggle" style="background: #f59e0b;" onclick="toggleElement('editar-<%= paciente.id_paciente %>')">✏️ Editar Datos</button>
-    <button type="button" class="btn-toggle" style="background: #0ea5e9;" onclick="toggleElement('turnos-<%= paciente.id_paciente %>')">📅 Ver Turnos Activos</button>
-    <button type="button" class="btn-toggle" style="background: #10b981;" onclick="toggleElement('hc-<%= paciente.id_paciente %>')">🩺 Historia Clínica</button>
+    <button type="button" class="btn-toggle" style="background: #f59e0b;" onclick="toggleElement('editar-<%= paciente.id_paciente %>')"> Editar Datos</button>
+    <button type="button" class="btn-toggle" style="background: #0ea5e9;" onclick="toggleElement('turnos-<%= paciente.id_paciente %>')"> Ver Turnos Activos</button>
+    <button type="button" class="btn-toggle" style="background: #10b981;" onclick="toggleElement('hc-<%= paciente.id_paciente %>')"> Historia Clínica</button>
 </div>
                         </div>
                         
@@ -100,7 +100,7 @@
         </div>
         
         <div style="width: 100%; text-align: right; margin-top: 0.5rem;">
-            <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 Guardar Cambios</button>
+            <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;"> Guardar Cambios</button>
         </div>
     </form>
 </div>
@@ -154,7 +154,7 @@
                                                         <form action="/admin/turnos/cancelar" method="POST" onsubmit="return confirm('¿Está seguro de que desea CANCELAR este turno médico? El espacio quedará liberado inmediatamente.');">
                                                             <input type="hidden" name="id_turno" value="<%= t.id_turno %>">
                                                             <input type="hidden" name="dni_busqueda" value="<%= dni_busqueda %>">
-                                                            <button type="submit" class="btn-cancelar">❌ Cancelar Cita</button>
+                                                            <button type="submit" class="btn-cancelar"> Cancelar Cita</button>
                                                         </form>
                                                     </td>
                                                 </tr>

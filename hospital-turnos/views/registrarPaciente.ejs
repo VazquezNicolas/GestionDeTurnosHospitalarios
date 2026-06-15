@@ -14,7 +14,6 @@
         <% if (typeof error !== 'undefined' && error) { %>
             <div class="alert alert-danger"><%= error %></div>
         <% } %>
-        <!-- 👇 UNIFICADO: Cambiamos 'success' por 'exito' para que coincida con el controlador -->
         <% if (typeof exito !== 'undefined' && exito) { %>
             <div class="alert" style="background-color: #e3f9e5; color: #1f7a28; border: 1px solid #c1f2c7;"><%= exito %></div>
         <% } %>
@@ -36,7 +35,6 @@
                 </div>
             </div>
 
-            <!-- 👇 REORGANIZADO: Pusimos la fecha y agregamos el campo SEXO que faltaba en paralelo -->
             <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
                     <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
@@ -65,7 +63,7 @@
             <button type="submit" class="btn-submit">Registrar Paciente</button>
             
             <p style="margin-top: 1.5rem; font-size: 0.9rem;">
-                <a href="/auth/login" style="color: #1992d4; text-decoration: none;">← Volver al Menú</a>
+            <a href="/dashboard/admin" style="color: #777; text-decoration: none;">Volver al Panel General</a>
             </p>
         </form>
     </div>

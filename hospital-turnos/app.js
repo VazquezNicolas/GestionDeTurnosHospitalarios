@@ -60,18 +60,17 @@ app.use(session({
 // Mapeo de Rutas de Autenticación
 
 app.get('/dashboard/admin', authController.getDashboardAdmin);
-
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
-
 app.get('/auth/logout', authController.getLogout);
+
 
 app.get('/pacientes/registrar', pacienteController.getRegistroPaciente);
 app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
 app.get('/api/pacientes/buscar', pacienteController.buscarApiPorDni);
-app.get('/api/profesionales', medicoController.buscarApiPorEspecialidad);
 app.get('/api/turnos/horarios-disponibles', turnoController.getHorariosDisponiblesApi);
 
+app.get('/api/profesionales', medicoController.buscarApiPorEspecialidad);
 app.get('/medico/dashboard', medicoController.getDashboard);
 app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
 app.get('/medico/atender/:id', medicoController.getAtenderTurno);
@@ -83,15 +82,25 @@ app.get('/turnos/asignar', turnoController.getAsignarTurno);
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/turnos', turnoController.getVerTurnos);
 
-app.get('/admin/medicos/nuevo', adminController.getAgregarMedico);
-app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
-
 // Rutas exclusivas del Administrador para la reprogramación de turnos
 app.get('/admin/turnos/reprogramar', adminController.getReprogramarTurnos);
 app.post('/admin/turnos/reprogramar/guardar', adminController.postGuardarReprogramacion);
 app.post('/admin/turnos/cancelar', adminController.postCancelarTurnoAdmin);
 app.get('/admin/pacientes/gestion', adminController.getGestionPacientes);
 app.post('/admin/pacientes/editar', adminController.postEditarPacienteAdmin);
+
+app.get('/admin/medicos/nuevo', adminController.getAgregarMedico);
+app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
+
+app.get('/admin/medicos/gestion', adminController.getGestionMedicos);
+app.post('/admin/medicos/editar', adminController.postEditarMedicoAdmin);
+app.post('/admin/medicos/eliminar', adminController.postEliminarMedicoAdmin);
+
+app.get('/admin/especialidades/gestion', adminController.getGestionEspecialidades);
+app.post('/admin/especialidades/agregar', adminController.postAgregarEspecialidad);
+app.post('/admin/especialidades/editar', adminController.postEditarEspecialidad);
+app.post('/admin/especialidades/eliminar', adminController.postEliminarEspecialidad);
+
 // Redirección por defecto al login
 app.get('/', (req, res) => {
     res.redirect('/auth/login');
