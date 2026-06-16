@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fichas Médicas e Historias Clínicas - Admin</title>
     <link rel="stylesheet" href="/css/styles.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         .container { max-width: 1100px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .search-box { background: #f1f5f9; padding: 1.25rem; border-radius: 6px; margin-bottom: 2rem; border: 1px solid #cbd5e1; }
@@ -12,14 +15,17 @@
         .paciente-header { background: #334e68; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
         .paciente-body { padding: 1.25rem; background: #f8fafc; }
         .inner-box { background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-top: 1rem; }
-        .evolucion-item { border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem; background: #fdfdfd; padding: 0.75rem; border: 1px solid #e2e8f0; border-left: 4px solid #10b981; }
+        .evolucion-item { border-left: 4px solid #10b981; padding-left: 1rem; margin-bottom: 1rem; background: #fdfdfd; padding: 0.75rem; border: 1px solid #e2e8f0; }
         .btn-toggle { background: #1992d4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 0.5rem; }
         .btn-toggle:hover { background: #1471a4; }
         .btn-cancelar { background: #ef4444; color: white; border: none; padding: 0.35rem 0.75rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .btn-cancelar:hover { background: #dc2626; }
+        .btn-pdf { background: #16a34a; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; float: right; }
+        .btn-pdf:hover { background: #15803d; }
         table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
         th, td { padding: 0.65rem; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 0.9rem; }
         th { background: #475569; color: white; }
+        .clearfix::after { content: ""; clear: both; display: table; }
     </style>
 </head>
 <body>
@@ -35,7 +41,7 @@
             <form action="/admin/pacientes/gestion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label for="dni_busqueda">Filtrar por Documento Nacional de Identidad (DNI):</label>
-                    <input type="text" id="dni_busqueda" name="dni_busqueda" value="<%= dni_busqueda %>" placeholder="Ej: 46123456">
+                    <input type="text" id="dni_busqueda" name="dni_busqueda" value="<%= dni_busqueda %>" placeholder="Ej: 46123456" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
                 </div>
                 <button type="submit" class="btn-save" style="margin-top: 0; width: auto; padding: 0.65rem 1.5rem; background: #334e68; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;"> Buscar Ficha</button>
                 <% if (dni_busqueda) { %>
@@ -57,75 +63,62 @@
                                 <strong style="font-size: 1.1rem;"><%= paciente.apellido %>, <%= paciente.nombre %></strong>
                                 <span style="margin-left: 1rem; opacity: 0.85;">| DNI: <%= paciente.dni %></span>
                             </div>
-<div>
-    <button type="button" class="btn-toggle" style="background: #f59e0b;" onclick="toggleElement('editar-<%= paciente.id_paciente %>')"> Editar Datos</button>
-    <button type="button" class="btn-toggle" style="background: #0ea5e9;" onclick="toggleElement('turnos-<%= paciente.id_paciente %>')"> Ver Turnos Activos</button>
-    <button type="button" class="btn-toggle" style="background: #10b981;" onclick="toggleElement('hc-<%= paciente.id_paciente %>')"> Historia Clínica</button>
-</div>
+                            <div>
+                                <button type="button" class="btn-toggle" style="background: #f59e0b;" onclick="toggleElement('editar-<%= paciente.id_paciente %>')"> Editar Datos</button>
+                                <button type="button" class="btn-toggle" style="background: #0ea5e9;" onclick="toggleElement('turnos-<%= paciente.id_paciente %>')"> Ver Turnos Activos</button>
+                                <button type="button" class="btn-toggle" style="background: #10b981;" onclick="toggleElement('hc-<%= paciente.id_paciente %>')"> Historia Clínica</button>
+                            </div>
                         </div>
                         
                         <div class="paciente-body">
                             <p style="margin: 0 0 0.5rem 0;"><strong>Correo Electrónico:</strong> <%= paciente.email || 'No registrado' %></p>
                             <p style="margin: 0;"><strong>Teléfono de Contacto:</strong> <%= paciente.telefono || 'No registrado' %></p>
+                            
                             <div id="editar-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #f59e0b; background: #fffbeb;">
-    <h4 style="color: #d97706; margin-top: 0; border-bottom: 1px solid #fcd34d; padding-bottom: 0.35rem;">Actualizar Ficha del Paciente</h4>
-    
-    <form action="/admin/pacientes/editar" method="POST" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-        <input type="hidden" name="id_paciente" value="<%= paciente.id_paciente %>">
-        <input type="hidden" name="dni_busqueda" value="<%= dni_busqueda %>">
-        
-        <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Nombre:</label>
-            <input type="text" name="nombre" value="<%= paciente.nombre %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
-        </div>
-        
-        <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Apellido:</label>
-            <input type="text" name="apellido" value="<%= paciente.apellido %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
-        </div>
-        
-        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">DNI:</label>
-            <input type="text" name="dni" value="<%= paciente.dni %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
-        </div>
-        
-        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Correo Electrónico:</label>
-            <input type="email" name="email" value="<%= paciente.email %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
-        </div>
-        
-        <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
-            <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Teléfono:</label>
-            <input type="text" name="telefono" value="<%= paciente.telefono %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
-        </div>
-        
-        <div style="width: 100%; text-align: right; margin-top: 0.5rem;">
-            <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;"> Guardar Cambios</button>
-        </div>
-    </form>
-</div>
+                                <h4 style="color: #d97706; margin-top: 0; border-bottom: 1px solid #fcd34d; padding-bottom: 0.35rem;">Actualizar Ficha del Paciente</h4>
+                                <form action="/admin/pacientes/editar" method="POST" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                                    <input type="hidden" name="id_paciente" value="<%= paciente.id_paciente %>">
+                                    <input type="hidden" name="dni_busqueda" value="<%= dni_busqueda %>">
+                                    
+                                    <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Nombre:</label>
+                                        <input type="text" name="nombre" value="<%= paciente.nombre %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Apellido:</label>
+                                        <input type="text" name="apellido" value="<%= paciente.apellido %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">DNI:</label>
+                                        <input type="text" name="dni" value="<%= paciente.dni %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Correo Electrónico:</label>
+                                        <input type="email" name="email" value="<%= paciente.email %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1 1 30%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Teléfono:</label>
+                                        <input type="text" name="telefono" value="<%= paciente.telefono %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
+                                    </div>
+                                    <div style="width: 100%; text-align: right; margin-top: 0.5rem;">
+                                        <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;"> Guardar Cambios</button>
+                                    </div>
+                                </form>
+                            </div>
+
                             <div id="turnos-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #0ea5e9;">
                                 <h4 style="color: #0284c7; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Turnos Médicos Vigentes</h4>
                                 <% 
-                                    // 1. Instanciamos el tiempo actual del servidor para comparar con precisión
                                     const ahora = new Date();
                                     const fechaHoyStr = ahora.toISOString().split('T')[0]; 
                                     const horaAhoraStr = ahora.toTimeString().split(' ')[0]; 
 
                                     let turnosReservados = [];
                                     if (paciente.turnos) {
-                                        // 2. Filtramos únicamente los turnos reservados que pertenezcan al futuro
                                         turnosReservados = paciente.turnos.filter(t => {
                                             if (t.estado !== 'Reservado') return false;
-                                            
-                                            // Si el año/mes/día es mayor, está perfecto
                                             if (t.fecha > fechaHoyStr) return true;
-                                            
-                                            // Si es hoy, controlamos minuciosamente que la hora del turno todavía no haya pasado
-                                            if (t.fecha === fechaHoyStr) {
-                                                return t.hora > horaAhoraStr;
-                                            }
-                                            
+                                            if (t.fecha === fechaHoyStr) return t.hora > horaAhoraStr;
                                             return false;
                                         });
                                     }
@@ -165,49 +158,70 @@
                             </div>
 
                             <div id="hc-<%= paciente.id_paciente %>" class="inner-box" style="display: none; border-left: 4px solid #10b981;">
-                                <h4 style="color: #15803d; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem;">Evoluciones Clínicas Registradas</h4>
-                                <% 
-                                    let atencionesReales = [];
-                                    if (paciente.turnos) {
-                                        paciente.turnos.forEach(t => {
-                                            const evol = t.registro_atencion; 
-                                            if (evol) {
-                                                atencionesReales.push({
-                                                    fecha: evol.fecha_atencion,
-                                                    diagnostico: evol.diagnostico,
-                                                    tratamiento: evol.tratamiento,
-                                                    observaciones: evol.observaciones,
-                                                    cie10: evol.codigo_cie10,
-                                                    medico: t.profesional ? `Dr/Dra. ${t.profesional.apellido}, ${t.profesional.nombre}` : 'No especificado'
-                                                });
-                                            }
-                                        });
-                                    }
-                                    atencionesReales.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                                %>
-                                <% if (atencionesReales.length === 0) { %>
-                                    <p style="color: #64748b; font-style: italic; margin: 0;">El paciente no registra consultas médicas cerradas ni evoluciones históricas en el sistema.</p>
-                                <% } else { %>
-                                    <% atencionesReales.forEach(item => { %>
-                                        <div class="evolucion-item">
-                                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 0.35rem;">
-                                                <span><strong>Fecha de Consulta:</strong> <%= item.fecha %></span>
-                                                <span><strong>Atendió:</strong> <%= item.medico %></span>
+                                <div class="clearfix" style="border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 1rem;">
+                                    <h4 style="color: #15803d; margin: 0; float: left;">Evoluciones Clínicas Registradas</h4>
+                                    
+                                    <button type="button" 
+                                            class="btn-pdf html2pdf__button" 
+                                            data-id="<%= paciente.id_paciente %>" 
+                                            data-dni="<%= paciente.dni %>" 
+                                            data-apellido="<%= paciente.apellido %>"
+                                            onclick="exportarFichaPDF(this)">
+                                        Descargar PDF
+                                    </button>
+                                </div>
+                                
+                                <div id="contenido-pdf-<%= paciente.id_paciente %>" style="background: #ffffff; padding: 10px; border-radius: 4px;">
+                                    
+                                    <div style="text-align: center; margin-bottom: 25px; border-bottom: 2px solid #334e68; padding-bottom: 10px;">
+                                        <h2 style="color: #334e68; margin: 0 0 5px 0; font-size: 1.5rem;">Historia Clínica Oficial</h2>
+                                        <p style="margin: 0; font-size: 0.95rem; color: #475569;"><strong>Paciente:</strong> <%= paciente.apellido %>, <%= paciente.nombre %> | <strong>DNI:</strong> <%= paciente.dni %></p>
+                                    </div>
+
+                                    <% 
+                                        let atencionesReales = [];
+                                        if (paciente.turnos) {
+                                            paciente.turnos.forEach(t => {
+                                                const evol = t.registro_atencion; 
+                                                if (evol) {
+                                                    atencionesReales.push({
+                                                        fecha: evol.fecha_atencion,
+                                                        diagnostico: evol.diagnostico,
+                                                        tratamiento: evol.tratamiento,
+                                                        observaciones: evol.observaciones,
+                                                        cie10: evol.codigo_cie10,
+                                                        medico: t.profesional ? `Dr/Dra. ${t.profesional.apellido}, ${t.profesional.nombre}` : 'No especificado'
+                                                    });
+                                                }
+                                            });
+                                        }
+                                        atencionesReales.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                                    %>
+                                    <% if (atencionesReales.length === 0) { %>
+                                        <p style="color: #64748b; font-style: italic; margin: 0;">El paciente no registra consultas médicas cerradas ni evoluciones históricas en el sistema.</p>
+                                    <% } else { %>
+                                        <% atencionesReales.forEach(item => { %>
+                                            <div class="evolucion-item" style="background: #ffffff; margin-bottom: 1.25rem;">
+                                                
+                                                <div class="clearfix" style="font-size: 0.85rem; color: #64748b; border-bottom: 1px dashed #e2e8f0; padding-bottom: 0.35rem; margin-bottom: 0.5rem;">
+                                                    <span style="float: left;"><strong>Fecha de Consulta:</strong> <%= item.fecha %></span>
+                                                    <span style="float: right;"><strong>Atendió:</strong> <%= item.medico %></span>
+                                                </div>
+                                                
+                                                <p style="margin: 0.35rem 0; color: #1e293b;"><strong>Diagnóstico:</strong> <%= item.diagnostico %></p>
+                                                <% if (item.tratamiento) { %>
+                                                    <p style="margin: 0.35rem 0; font-size: 0.95rem; color: #334155;"><strong>Tratamiento:</strong> <%= item.tratamiento %></p>
+                                                <% } %>
+                                                <% if (item.observaciones) { %>
+                                                    <p style="margin: 0.35rem 0; font-size: 0.9rem; color: #475569; font-style: italic;"><strong>Observaciones:</strong> <%= item.observaciones %></p>
+                                                <% } %>
+                                                <% if (item.cie10) { %>
+                                                    <span style="display: inline-block; background: #e2e8f0; padding: 0.15rem 0.35rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-top: 0.25rem; color: #334e68;">CIE-10: <%= item.cie10 %></span>
+                                                <% } %>
                                             </div>
-                                            <p style="margin: 0.25rem 0;"><strong>Diagnóstico:</strong> <%= item.diagnostico %></p>
-                                            <% if (item.tratamiento) { %>
-                                                <p style="margin: 0.25rem 0; font-size: 0.95rem;"><strong>Tratamiento:</strong> <%= item.tratamiento %></p>
-                                            <% } %>
-                                            <% if (item.observaciones) { %>
-                                                <p style="margin: 0.25rem 0; font-size: 0.9rem; color: #64748b; font-style: italic;"><strong>Observaciones:</strong> <%= item.observaciones %></p>
-                                            <% } %>
-                                            <% if (item.cie10) { %>
-                                                <span style="display: inline-block; background: #e2e8f0; padding: 0.15rem 0.35rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-top: 0.25rem;">CIE-10: <%= item.cie10 %></span>
-                                            <% } %>
-                                        </div>
-                                    <% }); %>
-                                <% } %>
-                            </div>
+                                        <% }); %>
+                                    <% } %>
+                                </div> </div>
                         </div>
                     </div>
                 <% }); %>
@@ -220,10 +234,41 @@
     </div>
 
     <script>
-        // Función unificada para mostrar/ocultar los bloques dinámicos
         function toggleElement(idElemento) {
             const contenedor = document.getElementById(idElemento);
             contenedor.style.display = contenedor.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function exportarFichaPDF(botonClick) {
+            const idPaciente = botonClick.getAttribute('data-id');
+            const dni = botonClick.getAttribute('data-dni');
+            const apellido = botonClick.getAttribute('data-apellido');
+
+            const elementoAExportar = document.getElementById('contenido-pdf-' + idPaciente);
+            
+            if (!elementoAExportar) {
+                alert("Error técnico: No se pudo localizar el segmento clínico de impresión.");
+                return;
+            }
+
+            // Ocultamos botones de descarga para evitar que salgan impresos en la hoja
+            const botones = document.querySelectorAll('.html2pdf__button');
+            botones.forEach(btn => btn.style.display = 'none');
+
+            const opciones = {
+                margin:       [12, 12, 12, 12], 
+                filename:     'Historia_Clinica_' + apellido.replace(/\s+/g, '_') + '_' + dni + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                // CLAVE: Forzamos el fondo blanco y desactivamos herencias raras del viewport
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Ejecución limpia
+            html2pdf().set(opciones).from(elementoAExportar).save().then(() => {
+                // Restauramos visibilidad de los botones del sistema
+                botones.forEach(btn => btn.style.display = '');
+            });
         }
     </script>
 </body>

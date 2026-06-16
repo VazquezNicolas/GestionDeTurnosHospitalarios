@@ -105,6 +105,7 @@ app.post('/admin/especialidades/agregar', esAdmin, adminController.postAgregarEs
 app.post('/admin/especialidades/editar', esAdmin, adminController.postEditarEspecialidad);
 app.post('/admin/especialidades/eliminar', esAdmin, adminController.postEliminarEspecialidad);
 
+
 app.get('/admin/disponibilidad/gestion', esAdmin, adminController.getGestionDisponibilidad);
 app.post('/admin/disponibilidad/generar', esAdmin, adminController.postGenerarDisponibilidad);
 app.post('/admin/disponibilidad/eliminar', esAdmin, adminController.postEliminarDisponibilidad);

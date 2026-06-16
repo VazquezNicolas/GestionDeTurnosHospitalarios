@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial Clínico - <%= paciente.apellido %></title>
     <link rel="stylesheet" href="/css/styles.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         .historial-container { max-width: 900px; margin: 2rem auto; padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .paciente-header { background: #334e68; color: white; padding: 1.5rem; border-radius: 6px; margin-bottom: 2rem; }
@@ -17,55 +20,92 @@
         .evolucion-seccion p { margin: 0.25rem 0; color: #334155; white-space: pre-line; }
         .btn-volver { display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: #64748b; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; }
         .btn-volver:hover { background: #475569; }
+        
+        /* Estilos del botón de descarga */
+        .btn-descargar { background: #16a34a; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .btn-descargar:hover { background: #15803d; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
     </style>
 </head>
 <body>
     <div class="historial-container">
         
-        <!-- Cabecera con datos del Paciente -->
-        <div class="paciente-header">
-            <h2>Historial Clínico Digital</h2>
-            <p><strong>Paciente:</strong> <%= paciente.apellido %>, <%= paciente.nombre %> | <strong>DNI:</strong> <%= paciente.dni %></p>
-        </div>
-
-        <h3>Evoluciones del Paciente</h3>
-
-        <% if (historial.length === 0) { %>
-            <div style="background: #f1f5f9; padding: 2rem; text-align: center; color: #64748b; border-radius: 6px;">
-                No se registran atenciones médicas previas para este paciente en el sistema.
+        <div id="contenido-pdf">
+            
+            <div class="paciente-header">
+                <h2>Historial Clínico Digital</h2>
+                <p><strong>Paciente:</strong> <%= paciente.apellido %>, <%= paciente.nombre %> | <strong>DNI:</strong> <%= paciente.dni %></p>
             </div>
-        <% } else { %>
-            <!-- Bucle para iterar las consultas de la BD -->
-            <% historial.forEach(registro => { %>
-                <div class="evolucion-card">
-                    <div class="evolucion-meta">
-                        <span> <strong>Fecha:</strong> <%= registro.turno.fecha %></span>
-                        <span> <strong>Atendido por:</strong> Dr/a. <%= registro.turno.profesional ? registro.turno.profesional.apellido : 'Especialista' %></span>
-                    </div>
 
-                    <div class="evolucion-seccion">
-                        <strong>Diagnóstico:</strong>
-                        <p><%= registro.diagnostico %></p>
-                    </div>
+            <div class="flex-between">
+                <h3 style="margin: 0; color: #334e68;">Evoluciones del Paciente</h3>
+                
+                <button type="button" class="btn-descargar html2pdf__button" onclick="exportarPDF()">
+                    📄 Descargar PDF
+                </button>
+            </div>
 
-                    <% if (registro.tratamiento) { %>
-                        <div class="evolucion-seccion">
-                            <strong>Tratamiento Indicado:</strong>
-                            <p><%= registro.tratamiento %></p>
-                        </div>
-                    <% } %>
-
-                    <% if (registro.observaciones) { %>
-                        <div class="evolucion-seccion">
-                            <strong>Observaciones / Notas de Evolución:</strong>
-                            <p><%= registro.observaciones %></p>
-                        </div>
-                    <% } %>
+            <% if (historial.length === 0) { %>
+                <div style="background: #f1f5f9; padding: 2rem; text-align: center; color: #64748b; border-radius: 6px;">
+                    No se registran atenciones médicas previas para este paciente en el sistema.
                 </div>
-            <% }) %>
-        <% } %>
+            <% } else { %>
+                <% historial.forEach(registro => { %>
+                    <div class="evolucion-card">
+                        <div class="evolucion-meta">
+                            <span> <strong>Fecha:</strong> <%= registro.turno.fecha %></span>
+                            <span> <strong>Atendido por:</strong> Dr/a. <%= registro.turno.profesional ? registro.turno.profesional.apellido : 'Especialista' %></span>
+                        </div>
 
-        <a href="/medico/dashboard" class="btn-volver">← Volver al Panel</a>
+                        <div class="evolucion-seccion">
+                            <strong>Diagnóstico:</strong>
+                            <p><%= registro.diagnostico %></p>
+                        </div>
+
+                        <% if (registro.tratamiento) { %>
+                            <div class="evolucion-seccion">
+                                <strong>Tratamiento Indicado:</strong>
+                                <p><%= registro.tratamiento %></p>
+                            </div>
+                        <% } %>
+
+                        <% if (registro.observaciones) { %>
+                            <div class="evolucion-seccion">
+                                <strong>Observaciones / Notas de Evolución:</strong>
+                                <p><%= registro.observaciones %></p>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }) %>
+            <% } %>
+            
+        </div> <a href="/medico/dashboard" class="btn-volver html2pdf__button">← Volver al Panel</a>
     </div>
+
+    <script>
+        function exportarPDF() {
+            // Buscamos el div que queremos imprimir
+            const elementoAExportar = document.getElementById('contenido-pdf');
+            
+            // Ocultamos momentáneamente los botones para que no salgan en el PDF impreso
+            const botones = document.querySelectorAll('.html2pdf__button');
+            botones.forEach(btn => btn.style.display = 'none');
+
+            // Configuramos las opciones del PDF
+            const opciones = {
+                margin:       [10, 10, 10, 10], // Margen en mm [top, left, bottom, right]
+                filename:     'Historia_Clinica_<%= paciente.apellido %>_<%= paciente.dni %>.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Ejecutamos la promesa de generación
+            html2pdf().set(opciones).from(elementoAExportar).save().then(() => {
+                // Cuando termina de descargar, volvemos a mostrar los botones
+                botones.forEach(btn => btn.style.display = '');
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,6 +1,10 @@
-const Usuario = require('../models/usuarioModel');
 const Paciente = require('../models/pacienteModel');
+const Usuario = require('../models/usuarioModel');
+const Profesional = require('../models/profesionalModel');
+const Especialidad = require('../models/especialidadModel');
 const Turno = require('../models/turnoModel');
+const { Op } = require('sequelize');
+const bcrypt = require('bcrypt');
 
 // 1. RENDERIZAR LA VISTA DE LOGIN (GET)
 const getLogin = (req, res) => {
@@ -11,30 +15,45 @@ const getLogin = (req, res) => {
 
 const getDashboardAdmin = async (req, res) => {
     try {
-        // 1. Contamos de forma dinámica los registros de cada tabla en MySQL
-        const totalPacientes = await Paciente.count();
-        
-        // Contamos los operadores activos (Rol 1 = Admin/Operador)
-        const totalUsuarios = await Usuario.count({ where: { id_rol: 1 } }); 
-        
-        // Dejamos calculado también el contador de turnos por si te lo pide la línea 97
-        const totalTurnos = await Turno.count(); 
+        if (!req.session || req.session.id_rol !== 1) {
+            return res.redirect('/auth/login');
+        }
+// Generamos la fecha actual en el formato de tu base de datos (YYYY-MM-DD)
+        const hoy = new Date().toISOString().split('T')[0];
 
-        // 2. Le pasamos ABSOLUTAMENTE TODAS las variables que tu EJS necesita
-        res.render('dashboardAdmin', {
-            totalPacientes: totalPacientes,
-            totalUsuarios: totalUsuarios, // Soluciona el error de image_5f57ea.png
-            totalTurnos: totalTurnos      // Nos adelantamos al siguiente bloque del HTML
+        // Turnos vigentes (Reservados y que la fecha sea mayor o igual a hoy)
+
+        // Consultas simultáneas a la base de datos (RF-23)
+        const totalPacientes = await Paciente.count();
+        const totalUsuarios = 1;
+        const totalMedicos = await Profesional.count();
+        const totalEspecialidades = await Especialidad.count();
+        
+        // Turnos vigentes (ejemplo: estado 'Reservado')
+        const turnosActivos = await Turno.count({ 
+            where: { 
+                estado: 'Reservado',
+                fecha: {
+                    [Op.gte]: hoy // Op.gte significa "Greater Than or Equal" (Mayor o igual a)
+                }
+            } 
+        });
+        
+        // Turnos históricos (Absolutamente todos los turnos en la tabla)
+        const turnosHistoricos = await Turno.count();
+
+        res.render('dashboardAdmin', { // Asegurate de que este sea el nombre de tu archivo ejs
+            totalPacientes,
+            totalUsuarios,
+            totalMedicos,
+            totalEspecialidades,
+            turnosActivos,
+            turnosHistoricos
         });
 
     } catch (error) {
-        console.error('Error al cargar las estadísticas del admin:', error);
-        // Enviamos valores en 0 para que al menos cargue la interfaz si falla la BD
-        res.render('dashboardAdmin', {
-            totalPacientes: 0,
-            totalUsuarios: 0,
-            totalTurnos: 0
-        });
+        console.error('Error al cargar panel de administración:', error);
+        res.render('dashboardAdmin', { error: 'No se pudieron cargar las estadísticas.' });
     }
 };
 
@@ -42,26 +61,36 @@ const postLogin = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Buscamos el usuario por su nombre_usuario mapeado de la BD
+        // 1. Buscamos el usuario por su nombre_usuario mapeado de la BD
         const usuarioEncontrado = await Usuario.findOne({ 
             where: { nombre_usuario: username } 
         });
 
-        // Validación de existencia y contraseña (respetando la columna 'contrasenia')
-        if (!usuarioEncontrado || usuarioEncontrado.contrasenia !== password) {
+        // 2. Si el usuario no existe, rebotamos con mensaje genérico por seguridad
+        if (!usuarioEncontrado) {
             return res.render('login', { 
                 error: 'Usuario o contraseña incorrectos.' 
             });
         }
 
-        // Verificación de estado del usuario
+        // 3. LA MAGIA DE BCRYPT: Comparamos el texto plano con el hash guardado en la BD
+        const passwordValida = await bcrypt.compare(password, usuarioEncontrado.contrasenia);
+
+        // Si la validación falla, rebotamos
+        if (!passwordValida) {
+            return res.render('login', { 
+                error: 'Usuario o contraseña incorrectos.' 
+            });
+        }
+
+        // 4. Verificación de estado del usuario
         if (usuarioEncontrado.estado !== 'Active') {
             return res.render('login', { 
                 error: 'El usuario se encuentra inactivo. Contacte al administrador.' 
             });
         }
 
-        // LA MAGIA DE LA SESIÓN: Guardamos los datos clave del usuario en el navegador
+        // 5. LA MAGIA DE LA SESIÓN: Guardamos los datos clave del usuario en el navegador
         req.session.id_usuario = usuarioEncontrado.id_usuario;
         req.session.nombre_usuario = usuarioEncontrado.nombre_usuario;
         req.session.id_rol = usuarioEncontrado.id_rol;
@@ -69,9 +98,9 @@ const postLogin = async (req, res) => {
         // Guardamos la FK del profesional médico (si es admin, esto viajará como NULL automáticamente)
         req.session.id_profesional = usuarioEncontrado.id_profesional; 
 
-        // Enrutamiento dinámico inteligente según el id_rol de tu SQL
+        // 6. Enrutamiento dinámico inteligente según el id_rol de tu SQL
         if (usuarioEncontrado.id_rol === 1) {
-            // Rol: Administrador -> Al panel de gestión de turnos
+            // Rol: Administrador -> Al panel de gestión principal
             return res.redirect('/dashboard/admin');
         } else if (usuarioEncontrado.id_rol === 2) {
             // Rol: Médico -> A su agenda personal
@@ -80,12 +109,13 @@ const postLogin = async (req, res) => {
             // En caso de que configuren el rol 3 (Paciente) a futuro
             return res.redirect('/paciente/dashboard');
         } else {
-            return res.redirect('/auth/login'); // Asegurate de que acá también diga /auth/login
+            return res.redirect('/auth/login');
         }
 
     } catch (error) {
         console.error('Error crítico en el proceso de autenticación:', error);
-        res.render('/auth/login', { 
+        // Corrección: res.render usa el nombre de la vista ('login'), no la ruta de la URL
+        res.render('login', { 
             error: 'Ocurrió un error en el servidor al intentar iniciar sesión.' 
         });
     }

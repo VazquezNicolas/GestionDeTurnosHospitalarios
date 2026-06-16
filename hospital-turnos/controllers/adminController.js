@@ -5,6 +5,7 @@ const Turno = require('../models/turnoModel');
 const Paciente = require('../models/pacienteModel');
 const Atencion = require('../models/atencionModel');
 const Disponibilidad = require('../models/disponibilidadModel'); 
+const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
 
 // const { sequelize } = require('../config/database'); // Opcional por si usás transacciones
@@ -29,7 +30,7 @@ const getAgregarMedico = async (req, res) => {
 };
 
 // 2. PROCESAR EL ALTA EN CASCADA (POST)
-// Procesar el Alta y Generar Agenda Inicial a 2 años (POST)
+
 const postAgregarMedico = async (req, res) => {
     // 1. Agregamos nombre_usuario y contrasenia al destructuring
     const { 
@@ -50,13 +51,20 @@ const postAgregarMedico = async (req, res) => {
             telefono: telefono ? telefono.trim() : null
         });
 
-        // 3. Creamos el usuario vinculado con las columnas correctas (en texto plano)
+        // 3. Creamos el usuario vinculado con las columnas correctas (HASHEADO con bcrypt)
         if (nombre_usuario && nombre_usuario.trim() !== '') {
+            // Determinamos qué contraseña usar (la enviada o la de por defecto)
+            const passwordPlana = contrasenia && contrasenia.trim() !== '' ? contrasenia : '123456';
+            
+            // Generamos el Hash de seguridad
+            const saltRounds = 10;
+            const passwordHasheada = await bcrypt.hash(passwordPlana, saltRounds);
+
             await Usuario.create({
                 nombre_usuario: nombre_usuario.trim(),
-                contrasenia: contrasenia && contrasenia.trim() !== '' ? contrasenia : '123456',
-                id_profesional: nuevoMedico.id_profesional, // Vinculamos con el ID recién generado
-                id_rol: 2 // Rol 2 para médicos
+                contrasenia: passwordHasheada, // ¡Guardamos el hash irreversible, no el texto plano!
+                id_profesional: nuevoMedico.id_profesional, 
+                id_rol: 2 
             });
         }
 
@@ -474,11 +482,16 @@ const postEditarMedicoAdmin = async (req, res) => {
             // Buscamos si ya tiene usuario, si no, lo creamos
             let usuario = await Usuario.findOne({ where: { id_profesional: id_profesional } });
             
+            const saltRounds = 10; // Nivel de seguridad de bcrypt
+
             if (!usuario) {
                 // Crear usuario nuevo si no existe utilizando nombre_usuario y contrasenia
+                const passwordPlana = password && password.trim() !== '' ? password : '123456';
+                const passwordHasheada = await bcrypt.hash(passwordPlana, saltRounds);
+
                 await Usuario.create({
                     nombre_usuario: username.trim(),
-                    contrasenia: password && password.trim() !== '' ? password : '123456', // Contraseña por defecto si viene vacía
+                    contrasenia: passwordHasheada, // Guardamos el hash
                     id_profesional: id_profesional,
                     id_rol: 2 // Rol de médico
                 });
@@ -486,9 +499,11 @@ const postEditarMedicoAdmin = async (req, res) => {
                 // Actualizar usuario existente
                 let updateData = { nombre_usuario: username.trim() };
                 
+                // Solo hasheamos y guardamos si mandó una contraseña nueva
                 if (password && password.trim() !== '') {
-                    updateData.contrasenia = password;
+                    updateData.contrasenia = await bcrypt.hash(password, saltRounds);
                 }
+                
                 await usuario.update(updateData);
             }
         }
@@ -844,7 +859,6 @@ const getHorasDisponiblesAPI = async (req, res) => {
         return res.status(500).json([]);
     }
 };
-
 
 
 module.exports = {
