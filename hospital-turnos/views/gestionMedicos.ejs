@@ -47,7 +47,8 @@
                     <select id="id_especialidad_busqueda" name="id_especialidad_busqueda" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
                         <option value="">-- Todas las Especialidades --</option>
                         <% especialidades.forEach(e => { %>
-                            <option value="<%= e.id_especialidad %>" <%= id_especialidad_busqueda == e.id_especialidad ? 'selected' : '' %>>
+                            <% let selected = (id_especialidad_busqueda == e.id_especialidad) ? 'selected' : ''; %>
+                            <option value="<%= e.id_especialidad %>" <%= selected %>>
                                 <%= e.nombre %>
                             </option>
                         <% }); %>
@@ -72,6 +73,10 @@
                     <% 
                         const esp = especialidades.find(e => e.id_especialidad === med.id_especialidad);
                         const nombreEspecialidad = esp ? esp.nombre : 'Especialidad no asignada';
+                        
+                        // Obtenemos de forma segura el atributo nombre_usuario
+                        const nombreUsuario = med.Usuario ? med.Usuario.nombre_usuario : '';
+                        const textoUsuario = nombreUsuario !== '' ? nombreUsuario : 'No asignado';
                     %>
                     <div class="medico-card">
                         <div class="medico-header">
@@ -95,9 +100,11 @@
                         
                         <div class="medico-body">
                             <p style="margin: 0 0 0.5rem 0;"><strong>Especialidad:</strong> <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold;"><%= nombreEspecialidad %></span></p>    
-                                <p style="margin: 0 0 0.5rem 0;"><strong>Días y Horarios:</strong> <span style="color: #16a34a; font-weight: bold;"><%= med.agendaResumen %></span></p>
-                                <p style="margin: 0 0 0.5rem 0;"><strong>Correo Electrónico:</strong> <%= med.email || 'No registrado' %></p>
-                                <p style="margin: 0;"><strong>Teléfono Institucional/Móvil:</strong> <%= med.telefono || 'No registrado' %></p>
+                            <p style="margin: 0 0 0.5rem 0;"><strong>Días y Horarios:</strong> <span style="color: #16a34a; font-weight: bold;"><%= med.agendaResumen %></span></p>
+                            <p style="margin: 0 0 0.5rem 0;"><strong>Usuario de sistema:</strong> <%= textoUsuario %></p>
+                            <p style="margin: 0 0 0.5rem 0;"><strong>Correo Electrónico:</strong> <%= med.email || 'No registrado' %></p>
+                            <p style="margin: 0;"><strong>Teléfono Institucional/Móvil:</strong> <%= med.telefono || 'No registrado' %></p>
+                            
                             <div id="editar-<%= med.id_profesional %>" class="inner-box" style="display: none; border-left: 4px solid #f59e0b; background: #fffbeb;">
                                 <h4 style="color: #d97706; margin-top: 0; border-bottom: 1px solid #fcd34d; padding-bottom: 0.35rem;">Actualizar Datos del Profesional</h4>
                                 
@@ -125,7 +132,8 @@
                                         <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Especialidad:</label>
                                         <select name="id_especialidad" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;" required>
                                             <% especialidades.forEach(e => { %>
-                                                <option value="<%= e.id_especialidad %>" <%= med.id_especialidad === e.id_especialidad ? 'selected' : '' %>>
+                                                <% let especialidadSeleccionada = (med.id_especialidad === e.id_especialidad) ? 'selected' : ''; %>
+                                                <option value="<%= e.id_especialidad %>" <%= especialidadSeleccionada %>>
                                                     <%= e.nombre %>
                                                 </option>
                                             <% }); %>
@@ -141,11 +149,22 @@
                                         <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Teléfono:</label>
                                         <input type="text" name="telefono" value="<%= med.telefono %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
                                     </div>
+
+                                    <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Nombre de Usuario:</label>
+                                        <input type="text" name="username" value="<%= nombreUsuario %>" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                    </div>
+
+                                    <div class="form-group" style="flex: 1 1 45%; margin-bottom: 0;">
+                                        <label style="font-size: 0.85rem; font-weight: bold; color: #475569;">Nueva Contraseña:</label>
+                                        <input type="password" name="password" placeholder="Dejar vacío para no cambiar" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                    </div>
                                     
                                     <div style="width: 100%; text-align: right; margin-top: 0.5rem;">
                                         <button type="submit" style="background: #d97706; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: bold; cursor: pointer;"> Guardar Ficha Médica</button>
                                     </div>
                                 </form>
+
                                 <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px dashed #fcd34d;">
                                     <h4 style="color: #166534; margin-top: 0; margin-bottom: 0.5rem;">Regenerar Agenda de Trabajo (Próximos 2 años)</h4>
                                     <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">Configure los días y horarios. <strong>Atención:</strong> Esto borrará y reemplazará la disponibilidad futura libre de este profesional.</p>
@@ -184,7 +203,7 @@
                                         </div>
                                     </form>
                                 </div>
-                                </div>
+                            </div>
                         </div>
                     </div>
                 <% }); %>
@@ -223,5 +242,3 @@
     </script>
 </body>
 </html>
-
-```

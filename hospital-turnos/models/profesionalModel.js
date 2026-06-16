@@ -2,6 +2,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const Especialidad = require('./especialidadModel');
+const Usuario = require('./usuarioModel');
 
 const Profesional = sequelize.define('Profesional', {
     id_profesional: {
@@ -40,5 +41,7 @@ const Profesional = sequelize.define('Profesional', {
     timestamps: false // Para que no busque las columnas createdAt/updatedAt
 });
 
+Profesional.hasOne(Usuario, { foreignKey: 'id_profesional', as: 'Usuario' });
+Usuario.belongsTo(Profesional, { foreignKey: 'id_profesional' });
 
 module.exports = Profesional;

@@ -31,15 +31,16 @@ const getAgregarMedico = async (req, res) => {
 // 2. PROCESAR EL ALTA EN CASCADA (POST)
 // Procesar el Alta y Generar Agenda Inicial a 2 años (POST)
 const postAgregarMedico = async (req, res) => {
+    // 1. Agregamos nombre_usuario y contrasenia al destructuring
     const { 
         nombre, apellido, matricula, id_especialidad, email, telefono,
-        hora_inicio, hora_fin, dias_trabajo 
+        hora_inicio, hora_fin, dias_trabajo, nombre_usuario, contrasenia 
     } = req.body;
 
     try {
         if (!req.session || req.session.id_rol !== 1) return res.redirect('/auth/login');
 
-        // 1. Creamos al profesional
+        // 2. Creamos al profesional
         const nuevoMedico = await Profesional.create({
             nombre: nombre.trim(),
             apellido: apellido.trim(),
@@ -49,7 +50,17 @@ const postAgregarMedico = async (req, res) => {
             telefono: telefono ? telefono.trim() : null
         });
 
-        // 2. Normalizamos los días seleccionados (puede venir un string suelto o un array)
+        // 3. Creamos el usuario vinculado con las columnas correctas (en texto plano)
+        if (nombre_usuario && nombre_usuario.trim() !== '') {
+            await Usuario.create({
+                nombre_usuario: nombre_usuario.trim(),
+                contrasenia: contrasenia && contrasenia.trim() !== '' ? contrasenia : '123456',
+                id_profesional: nuevoMedico.id_profesional, // Vinculamos con el ID recién generado
+                id_rol: 2 // Rol 2 para médicos
+            });
+        }
+
+        // 4. Normalizamos los días seleccionados (puede venir un string suelto o un array)
         let diasSeleccionados = [];
         if (dias_trabajo) {
             if (Array.isArray(dias_trabajo)) {
@@ -59,7 +70,7 @@ const postAgregarMedico = async (req, res) => {
             }
         }
 
-        // 3. Generamos la agenda a 2 años si se indicaron horarios y días
+        // 5. Generamos la agenda a 2 años si se indicaron horarios y días
         if (hora_inicio && hora_fin && diasSeleccionados.length > 0) {
             const slotsNuevos = [];
             
@@ -98,17 +109,16 @@ const postAgregarMedico = async (req, res) => {
             }
         }
 
-        return res.redirect('/admin/medicos/gestion?exito=Profesional+registrado+y+agenda+creada+por+los+próximos+2+años.');
+        return res.redirect('/admin/medicos/gestion?exito=Profesional,+usuario+y+agenda+creados+correctamente.');
 
     } catch (error) {
         console.error('Error al registrar médico:', error);
         if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.redirect('/admin/medicos/agregar?error=La+matrícula+ingresada+ya+se+encuentra+registrada.');
+            return res.redirect('/admin/medicos/agregar?error=La+matrícula+o+el+nombre+de+usuario+ya+se+encuentra+registrado.');
         }
         return res.redirect('/admin/medicos/agregar?error=Ocurrió+un+error+interno+al+guardar+los+datos.');
     }
 };
-
 // 1. Vista: Buscar y listar turnos de un médico para reprogramar (GET)
 const getReprogramarTurnos = async (req, res) => {
     const { id_profesional } = req.query; // Captura el médico si ya buscó alguno
@@ -351,7 +361,11 @@ const getGestionMedicos = async (req, res) => {
             where: filtroWhere,
             limit: limit,
             offset: offset,
-            order: [['apellido', 'ASC']]
+            order: [['apellido', 'ASC']],
+            include: [{ 
+                model: Usuario, 
+                as: 'Usuario' // Debe coincidir con el 'as' que pusimos en el modelo
+            }]
         });
 
         const especialidades = await Especialidad.findAll({ order: [['nombre', 'ASC']] });
@@ -447,34 +461,43 @@ const postEliminarMedicoAdmin = async (req, res) => {
 
 // 2. Acción: Editar los datos del Médico (POST)
 const postEditarMedicoAdmin = async (req, res) => {
-    const { id_profesional, nombre, apellido, matricula, id_especialidad, email, telefono, matricula_busqueda, page } = req.body;
+    const { id_profesional, nombre, apellido, matricula, id_especialidad, email, telefono, username, password, matricula_busqueda, page } = req.body;
 
     try {
-        if (!req.session || req.session.id_rol !== 1) {
-            return res.redirect('/auth/login');
+        // 1. Actualizamos datos básicos del profesional
+        await Profesional.update({
+            nombre, apellido, matricula, id_especialidad, email, telefono
+        }, { where: { id_profesional } });
+
+        // 2. Lógica para el Usuario vinculado con las columnas correctas
+        if (username && username.trim() !== '') {
+            // Buscamos si ya tiene usuario, si no, lo creamos
+            let usuario = await Usuario.findOne({ where: { id_profesional: id_profesional } });
+            
+            if (!usuario) {
+                // Crear usuario nuevo si no existe utilizando nombre_usuario y contrasenia
+                await Usuario.create({
+                    nombre_usuario: username.trim(),
+                    contrasenia: password && password.trim() !== '' ? password : '123456', // Contraseña por defecto si viene vacía
+                    id_profesional: id_profesional,
+                    id_rol: 2 // Rol de médico
+                });
+            } else {
+                // Actualizar usuario existente
+                let updateData = { nombre_usuario: username.trim() };
+                
+                if (password && password.trim() !== '') {
+                    updateData.contrasenia = password;
+                }
+                await usuario.update(updateData);
+            }
         }
 
-        if (!id_profesional) {
-            return res.redirect('/admin/medicos/gestion');
-        }
-
-        // Actualizamos los datos en MySQL
-        await Profesional.update(
-            { nombre, apellido, matricula, id_especialidad, email, telefono },
-            { where: { id_profesional: parseInt(id_profesional, 10) } }
-        );
-
-        // Armamos la URL de retorno para no perder ni el filtro ni la página actual
-        let redirectUrl = `/admin/medicos/gestion?page=${page || 1}`;
-        if (matricula_busqueda) {
-            redirectUrl += `&matricula_busqueda=${matricula_busqueda}`;
-        }
+        return res.redirect(`/admin/medicos/gestion?page=${page || 1}&matricula_busqueda=${matricula_busqueda || ''}&exito=Profesional+actualizado.`);
         
-        return res.redirect(redirectUrl);
-
     } catch (error) {
-        console.error('Error crítico al editar datos del médico:', error);
-        return res.redirect('/admin/medicos/gestion');
+        console.error('Error al editar:', error);
+        return res.redirect('/admin/medicos/gestion?error=Error+al+guardar+datos.');
     }
 };
 

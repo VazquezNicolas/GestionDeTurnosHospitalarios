@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const { esAdmin, esMedico } = require('./middelwares/authMiddleware');
 
 //Config
 const { conectarDB, sequelize } = require('./config/database');
@@ -58,65 +59,63 @@ app.use(session({
 }));
 
 // Mapeo de Rutas de Autenticación
-
-app.get('/dashboard/admin', authController.getDashboardAdmin);
 app.get('/auth/login', authController.getLogin);
 app.post('/auth/login', authController.postLogin);
 app.get('/auth/logout', authController.getLogout);
 
+//Mapeo de Rutas de Medico
+app.get('/medico/dashboard',esMedico, medicoController.getDashboard);
+app.post('/medico/disponibilidad',esMedico, medicoController.postGuardarDisponibilidad);
+app.get('/medico/atender/:id',esMedico, medicoController.getAtenderTurno);
+app.post('/medico/atender',esMedico, medicoController.postAtenderTurno);
+app.get('/medico/historial/:id_paciente',esMedico, medicoController.getHistorialPaciente);
 
-app.get('/pacientes/registrar', pacienteController.getRegistroPaciente);
-app.post('/pacientes/registrar', pacienteController.postRegistroPaciente);
-app.get('/api/pacientes/buscar', pacienteController.buscarApiPorDni);
-app.get('/api/turnos/horarios-disponibles', turnoController.getHorariosDisponiblesApi);
+// Mapeo de Rutas de Admin
+app.get('/dashboard/admin', esAdmin,authController.getDashboardAdmin);
 
-app.get('/api/profesionales', medicoController.buscarApiPorEspecialidad);
-app.get('/medico/dashboard', medicoController.getDashboard);
-app.post('/medico/disponibilidad', medicoController.postGuardarDisponibilidad);
-app.get('/medico/atender/:id', medicoController.getAtenderTurno);
-app.post('/medico/atender', medicoController.postAtenderTurno);
-app.get('/medico/historial/:id_paciente', medicoController.getHistorialPaciente);
+app.get('/pacientes/registrar', esAdmin, pacienteController.getRegistroPaciente);
+app.post('/pacientes/registrar', esAdmin, pacienteController.postRegistroPaciente);
+app.get('/api/pacientes/buscar', esAdmin, pacienteController.buscarApiPorDni);
 
+app.get('/api/turnos/horarios-disponibles', esAdmin, turnoController.getHorariosDisponiblesApi);
+
+app.get('/api/profesionales', esAdmin, medicoController.buscarApiPorEspecialidad);
 
 app.get('/turnos/asignar', turnoController.getAsignarTurno); 
 app.post('/turnos/asignar', turnoController.postAsignarTurno);
 app.get('/turnos', turnoController.getVerTurnos);
 
-//app.post('/admin/turnos/asignar', adminController.postAsignarTurno);
-//app.get('/admin/turnos/asignar', adminController.getAsignarTurno);
-
 // Rutas exclusivas del Administrador para la reprogramación de turnos
-app.get('/admin/turnos/reprogramar', adminController.getReprogramarTurnos);
-app.post('/admin/turnos/reprogramar/guardar', adminController.postGuardarReprogramacion);
-app.post('/admin/turnos/cancelar', adminController.postCancelarTurnoAdmin);
-app.get('/admin/pacientes/gestion', adminController.getGestionPacientes);
-app.post('/admin/pacientes/editar', adminController.postEditarPacienteAdmin);
+app.get('/admin/turnos/reprogramar', esAdmin, adminController.getReprogramarTurnos);
+app.post('/admin/turnos/reprogramar/guardar', esAdmin, adminController.postGuardarReprogramacion);
+app.post('/admin/turnos/cancelar', esAdmin, adminController.postCancelarTurnoAdmin);
+app.get('/admin/pacientes/gestion', esAdmin, adminController.getGestionPacientes);
+app.post('/admin/pacientes/editar', esAdmin, adminController.postEditarPacienteAdmin);
 
-app.get('/admin/medicos/nuevo', adminController.getAgregarMedico);
-app.post('/admin/medicos/nuevo', adminController.postAgregarMedico);
+app.get('/admin/medicos/nuevo', esAdmin, adminController.getAgregarMedico);
+app.post('/admin/medicos/nuevo', esAdmin, adminController.postAgregarMedico);
 
-app.get('/admin/medicos/gestion', adminController.getGestionMedicos);
-app.post('/admin/medicos/editar', adminController.postEditarMedicoAdmin);
-app.post('/admin/medicos/eliminar', adminController.postEliminarMedicoAdmin);
+app.get('/admin/medicos/gestion', esAdmin, adminController.getGestionMedicos);
+app.post('/admin/medicos/editar', esAdmin, adminController.postEditarMedicoAdmin);
+app.post('/admin/medicos/eliminar', esAdmin, adminController.postEliminarMedicoAdmin);
 
-app.get('/admin/especialidades/gestion', adminController.getGestionEspecialidades);
-app.post('/admin/especialidades/agregar', adminController.postAgregarEspecialidad);
-app.post('/admin/especialidades/editar', adminController.postEditarEspecialidad);
-app.post('/admin/especialidades/eliminar', adminController.postEliminarEspecialidad);
+app.get('/admin/especialidades/gestion', esAdmin, adminController.getGestionEspecialidades);
+app.post('/admin/especialidades/agregar', esAdmin, adminController.postAgregarEspecialidad);
+app.post('/admin/especialidades/editar', esAdmin, adminController.postEditarEspecialidad);
+app.post('/admin/especialidades/eliminar', esAdmin, adminController.postEliminarEspecialidad);
+
+app.get('/admin/disponibilidad/gestion', esAdmin, adminController.getGestionDisponibilidad);
+app.post('/admin/disponibilidad/generar', esAdmin, adminController.postGenerarDisponibilidad);
+app.post('/admin/disponibilidad/eliminar', esAdmin, adminController.postEliminarDisponibilidad);
 
 
-app.get('/admin/disponibilidad/gestion', adminController.getGestionDisponibilidad);
-app.post('/admin/disponibilidad/generar', adminController.postGenerarDisponibilidad);
-app.post('/admin/disponibilidad/eliminar', adminController.postEliminarDisponibilidad);
+app.get('/admin/medicos/agregar', esAdmin, adminController.getAgregarMedico);
+app.post('/admin/medicos/agregar', esAdmin, adminController.postAgregarMedico);
 
+app.post('/admin/medicos/regenerar-agenda', esAdmin, adminController.postRegenerarAgendaMedico);
 
-app.get('/admin/medicos/agregar', adminController.getAgregarMedico);
-app.post('/admin/medicos/agregar', adminController.postAgregarMedico);
-
-app.post('/admin/medicos/regenerar-agenda', adminController.postRegenerarAgendaMedico);
-
-app.get('/api/disponibilidad/fechas', adminController.getFechasDisponiblesAPI);
-app.get('/api/disponibilidad/horas', adminController.getHorasDisponiblesAPI);
+app.get('/api/disponibilidad/fechas', esAdmin, adminController.getFechasDisponiblesAPI);
+app.get('/api/disponibilidad/horas', esAdmin, adminController.getHorasDisponiblesAPI);
 
 // Redirección por defecto al login
 app.get('/', (req, res) => {
