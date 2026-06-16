@@ -69,6 +69,7 @@ app.post('/medico/disponibilidad',esMedico, medicoController.postGuardarDisponib
 app.get('/medico/atender/:id',esMedico, medicoController.getAtenderTurno);
 app.post('/medico/atender',esMedico, medicoController.postAtenderTurno);
 app.get('/medico/historial/:id_paciente',esMedico, medicoController.getHistorialPaciente);
+app.post('/medico/turnos/ausente',esMedico, medicoController.postMarcarAusente);
 
 // Mapeo de Rutas de Admin
 app.get('/dashboard/admin', esAdmin,authController.getDashboardAdmin);

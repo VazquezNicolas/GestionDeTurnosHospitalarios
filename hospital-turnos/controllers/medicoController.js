@@ -108,6 +108,25 @@ const postAtenderTurno = async (req, res) => {
     }
 };
 
+const postMarcarAusente = async (req, res) => {
+    const { id_turno } = req.body;
+
+    try {
+        // Actualizamos el estado del turno
+        await Turno.update(
+            { estado: 'Ausente' }, 
+            { where: { id_turno: parseInt(id_turno, 10) } }
+        );
+
+        // CORRECCIÓN: Redireccionamos a tu ruta real (/medico/dashboard)
+        return res.redirect('/medico/dashboard?exito=Paciente+marcado+como+ausente.');
+        
+    } catch (error) {
+        console.error('Error al registrar ausencia:', error);
+        return res.redirect('/medico/dashboard?error=Ocurrió+un+error+al+actualizar+el+turno.');
+    }
+};
+
 // 2. Procesar Disponibilidad 
 const postGuardarDisponibilidad = async (req, res) => {
     try {
@@ -194,5 +213,6 @@ module.exports = {
     getAtenderTurno,
     postAtenderTurno,
     getHistorialPaciente,
-    buscarApiPorEspecialidad
+    buscarApiPorEspecialidad,
+    postMarcarAusente
 };
